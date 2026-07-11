@@ -4,6 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Trophy, Calendar, Cpu, ListChecks, Plus, ArrowRight, IdentificationCard } from '@phosphor-icons/react';
 
+
 export const EventDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
@@ -146,14 +147,23 @@ export const EventDetail: React.FC = () => {
             className="w-full h-full object-cover opacity-80"
           />
         </div>
-        <div className="p-8 relative">
-          <span className="inline-block rounded bg-tech-cyan/10 border border-tech-cyan/35 px-3 py-1 text-[9px] font-mono font-bold text-tech-cyan uppercase tracking-widest mb-4">
-            {event.status}
-          </span>
-          <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight font-mono mb-4 uppercase">{event.title}</h1>
-          <p className="text-xs text-slate-600 leading-relaxed max-w-[85ch]">{event.description}</p>
+        <div className="p-8 relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+          <div>
+            <span className="inline-block rounded bg-indigo-50 border border-indigo-200 px-3 py-1 text-[9px] font-mono font-bold text-indigo-600 uppercase tracking-widest mb-4">
+              {event.status}
+            </span>
+            <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight font-mono mb-4 uppercase">{event.title}</h1>
+            <p className="text-xs text-slate-600 leading-relaxed max-w-[85ch]">{event.description}</p>
+          </div>
+          <Link
+            to={`/ranking/${id}`}
+            className="shrink-0 inline-flex items-center gap-2 rounded-lg bg-amber-400 px-5 py-2.5 text-xs font-bold text-white hover:bg-amber-500 active:scale-95 transition-all shadow-md"
+          >
+            <Trophy size={16} weight="fill" /> XEM XẾP HẠNG
+          </Link>
         </div>
       </div>
+
 
       {/* Student Team Banner */}
       {user && (user.role === 'student_fpt' || user.role === 'student_external') && (

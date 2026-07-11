@@ -8,51 +8,63 @@ import { Events } from './pages/Events';
 import { EventDetail } from './pages/EventDetail';
 import { TeamDetail } from './pages/TeamDetail';
 import { OrganizerAdmin } from './pages/OrganizerAdmin';
+import { JudgeScoring } from './pages/JudgeScoring';
+import { Ranking } from './pages/Ranking';
 
-// Route guards
+// ── Route guards ────────────────────────────────────────────────────────────
+
+const Spinner = () => (
+  <div className="flex min-h-screen items-center justify-center bg-slate-50">
+    <div className="h-6 w-6 animate-spin rounded-full border-2 border-indigo-500 border-t-transparent" />
+  </div>
+);
+
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-dark-bg">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-tech-green border-t-transparent" />
-    </div>
-  );
+  if (loading) return <Spinner />;
   return user ? <>{children}</> : <Navigate to="/login" replace />;
 };
 
 const OrganizerRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-dark-bg">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-tech-green border-t-transparent" />
-    </div>
-  );
+  if (loading) return <Spinner />;
   return user && user.role === 'organizer' ? <>{children}</> : <Navigate to="/" replace />;
+};
+
+const JudgeRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user, loading } = useAuth();
+  if (loading) return <Spinner />;
+  const isJudge = user?.role === 'judge_internal' || user?.role === 'judge_guest';
+  return user && isJudge ? <>{children}</> : <Navigate to="/" replace />;
 };
 
 const PublicRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return (
-    <div className="flex min-h-screen items-center justify-center bg-dark-bg">
-      <div className="h-6 w-6 animate-spin rounded-full border-2 border-tech-green border-t-transparent" />
-    </div>
-  );
+  if (loading) return <Spinner />;
   return !user ? <>{children}</> : <Navigate to="/" replace />;
 };
 
+// ── Layout ──────────────────────────────────────────────────────────────────
+
 const AppLayout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-dark-bg text-slate-300 flex flex-col">
+    <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
       <Header />
       <main className="flex-grow">
         <Routes>
-          {/* Protected Routes */}
+          {/* Protected — all authenticated users */}
           <Route path="/" element={<ProtectedRoute><Events /></ProtectedRoute>} />
           <Route path="/events/:id" element={<ProtectedRoute><EventDetail /></ProtectedRoute>} />
           <Route path="/team" element={<ProtectedRoute><TeamDetail /></ProtectedRoute>} />
+          <Route path="/ranking/:eventId" element={<ProtectedRoute><Ranking /></ProtectedRoute>} />
+
+          {/* Organizer only */}
           <Route path="/organizer" element={<OrganizerRoute><OrganizerAdmin /></OrganizerRoute>} />
 
-          {/* Public Routes */}
+          {/* Judge only */}
+          <Route path="/judge/scoring" element={<JudgeRoute><JudgeScoring /></JudgeRoute>} />
+
+          {/* Public */}
           <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
           <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
 
@@ -60,8 +72,8 @@ const AppLayout: React.FC = () => {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      <footer className="border-t border-dark-border py-8 bg-slate-50 text-center text-xs text-slate-500 font-mono">
-        <div>HACKATHON MANAGEMENT PORTAL &copy; 2026. ALL RIGHTS RESERVED.</div>
+      <footer className="border-t border-slate-200 py-6 bg-white text-center text-[11px] text-slate-400 font-mono">
+        HACKATHON MANAGEMENT PORTAL &copy; 2026. ALL RIGHTS RESERVED.
       </footer>
     </div>
   );

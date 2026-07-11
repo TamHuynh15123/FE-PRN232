@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Users, Clipboard, Plus, CheckCircle, Warning, GithubLogo, YoutubeLogo, Globe, FileText } from '@phosphor-icons/react';
+import { Users, Clipboard, Plus, CheckCircle, Warning, GithubLogo, YoutubeLogo, Globe, FileText, ArrowClockwise, Copy, Check } from '@phosphor-icons/react';
 
 export const TeamDetail: React.FC = () => {
   const { user } = useAuth();
@@ -22,28 +23,30 @@ export const TeamDetail: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   const fetchTeamAndSubmissions = async () => {
-    if (!user) return;
+    if (!user) { setLoading(false); return; }
     try {
-      const savedTeams = JSON.parse(localStorage.getItem('hack_teams') || '[]');
-      const userTeam = savedTeams.find((t: any) => t.members.some((m: any) => m.userId === user.id));
-      
-      if (userTeam) {
-        // Populate members
-        const savedUsers = JSON.parse(localStorage.getItem('hack_users') || '[]');
-        const populatedMembers = userTeam.members.map((m: any) => {
-          const u = savedUsers.find((usr: any) => usr.id === m.userId);
-          return { ...m, fullName: u?.fullName || 'Thành viên', email: u?.email || '' };
-        });
-        
-        const populatedTeam = { ...userTeam, members: populatedMembers };
-        setTeam(populatedTeam);
+      // Gọi API BE: GET /teams/my (trả về tất cả teams user đang tham gia)
+      const myTeams = await api.teams.getMyTeams();
+      const teamList = Array.isArray(myTeams) ? myTeams : [];
 
-        // Fetch submissions
-        const data = await api.submissions.getByTeam(userTeam.id);
-        setSubmissions(data);
+      if (teamList.length > 0) {
+        // Lấy team đầu tiên (mới nhất, được sort theo createdAt desc từ BE)
+        const firstTeam = teamList[0];
+        setTeam(firstTeam);
+
+        // Load submissions theo teamId
+        try {
+          const subs = await api.submissions.getByTeam(firstTeam.id);
+          setSubmissions(Array.isArray(subs) ? subs : []);
+        } catch {
+          setSubmissions([]);
+        }
+      } else {
+        setTeam(null);
       }
     } catch (err) {
-      console.error('Error fetching team:', err);
+      console.error('Error fetching my teams:', err);
+      setTeam(null);
     } finally {
       setLoading(false);
     }
@@ -53,10 +56,25 @@ export const TeamDetail: React.FC = () => {
     fetchTeamAndSubmissions();
   }, [user]);
 
+
+  const [copied, setCopied] = useState(false);
+
   const handleCopyCode = () => {
     if (team?.inviteCode) {
-      navigator.clipboard.writeText(team.inviteCode);
-      alert('Đã sao chép mã mời vào bộ nhớ tạm!');
+      navigator.clipboard.writeText(team.inviteCode).then(() => {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      }).catch(() => {
+        // fallback nếu clipboard API bị block
+        const el = document.createElement('textarea');
+        el.value = team.inviteCode;
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand('copy');
+        document.body.removeChild(el);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      });
     }
   };
 
@@ -105,11 +123,31 @@ export const TeamDetail: React.FC = () => {
 
   if (!team) {
     return (
-      <div className="mx-auto max-w-7xl px-6 py-12 text-center text-slate-500">
-        <Users size={48} className="mx-auto mb-4 text-slate-400 animate-pulse" />
-        <h3 className="text-xs font-bold text-slate-900 font-mono uppercase mb-2">BẠN CHƯA THAM GIA ĐỘI THI NÀO</h3>
-        <p className="text-xs text-slate-500 max-w-[50ch] mx-auto mb-6">
-          Vui lòng bấm vào chi tiết một cuộc thi đang diễn ra để đăng ký lập đội hoặc nhập mã mời từ nhóm của bạn.
+      <div className="mx-auto max-w-4xl px-6 py-20 text-center">
+        <div className="inline-flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 mb-6">
+          <Users size={40} className="text-slate-400" />
+        </div>
+        <h3 className="text-lg font-bold text-slate-900 font-mono uppercase mb-3">BẠN CHƯA THAM GIA ĐỘI THI NÀO</h3>
+        <p className="text-sm text-slate-500 max-w-md mx-auto mb-8 leading-relaxed">
+          Vào chi tiết một cuộc thi đang diễn ra để lập đội hoặc nhập mã mời từ nhóm của bạn.
+        </p>
+        <div className="flex items-center justify-center gap-3 flex-wrap">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-2.5 text-sm font-bold text-white hover:bg-indigo-700 active:scale-95 transition-all shadow-md"
+          >
+            Xem danh sách sự kiện →
+          </Link>
+          <button
+            onClick={fetchTeamAndSubmissions}
+            className="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-600 hover:border-indigo-400 hover:text-indigo-600 active:scale-95 transition-all"
+          >
+            <ArrowClockwise size={16} /> Làm mới
+          </button>
+        </div>
+        {/* Debug hint */}
+        <p className="mt-8 text-[10px] text-slate-300 font-mono">
+          Nếu bạn vừa tạo đội, hãy nhấn "Làm mới" hoặc reload trang.
         </p>
       </div>
     );
@@ -121,26 +159,50 @@ export const TeamDetail: React.FC = () => {
       <div className="mb-10 rounded-xl border border-dark-border bg-white p-8 relative overflow-hidden flex flex-col md:flex-row justify-between items-start gap-6 shadow-sm">
         <div className="absolute top-0 right-0 h-40 w-40 rounded-full bg-tech-cyan/5 blur-3xl" />
         <div>
-          <span className="inline-block rounded bg-tech-cyan/10 border border-tech-cyan/35 px-2.5 py-0.5 text-[9px] font-mono font-bold text-tech-cyan uppercase tracking-widest mb-3">
-            Hạng mục: {team.categoryId ? 'Phát triển sản phẩm' : 'Chung'}
-          </span>
+          <div className="flex flex-wrap gap-2 mb-3">
+            {team.eventTitle && (
+              <span className="inline-block rounded bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-[9px] font-mono font-bold text-slate-600 uppercase tracking-widest">
+                {team.eventTitle}
+              </span>
+            )}
+            <span className="inline-block rounded bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 text-[9px] font-mono font-bold text-indigo-600 uppercase tracking-widest">
+              {team.categoryName || 'Hạng mục'}
+            </span>
+          </div>
           <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight font-mono mb-2 uppercase">{team.name}</h1>
           <p className="text-xs text-slate-600 max-w-[70ch]">{team.description || 'Chưa có mô tả chi tiết của đội.'}</p>
+          {team.leaderName && (
+            <p className="text-[11px] text-slate-400 mt-1 font-mono">
+              Trưởng nhóm: <span className="text-slate-600 font-semibold">{team.leaderName}</span>
+            </p>
+          )}
         </div>
 
-        {/* Invite Code Wrapper */}
-        <div className="rounded-lg border border-dark-border bg-slate-50 p-4 shrink-0 font-mono text-center w-full md:w-auto">
-          <span className="block text-[9px] text-slate-500 uppercase tracking-wider mb-1">MÃ MỜI THÀNH VIÊN</span>
-          <div className="flex items-center justify-center gap-3">
-            <span className="text-sm font-bold text-tech-cyan tracking-widest">{team.inviteCode}</span>
-            <button
-              onClick={handleCopyCode}
-              className="text-slate-400 hover:text-slate-900 p-1 hover:bg-slate-100 rounded transition-all"
-              title="Sao chép mã"
-            >
-              <Clipboard size={16} />
-            </button>
-          </div>
+        {/* Invite Code + Refresh Wrapper */}
+        <div className="flex flex-col items-end gap-3 shrink-0">
+          {team.inviteCode && (
+            <div className="rounded-xl border-2 border-dashed border-indigo-200 bg-indigo-50 px-6 py-4 font-mono text-center w-full md:w-auto">
+              <span className="block text-[9px] text-indigo-400 uppercase tracking-widest mb-2">MÃ MỜI THÀNH VIÊN</span>
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-xl font-black text-indigo-600 tracking-[0.25em]">{team.inviteCode}</span>
+                <button
+                  onClick={handleCopyCode}
+                  className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-bold transition-all active:scale-95 ${
+                    copied ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+                  }`}
+                  title="Sao chép mã mời"
+                >
+                  {copied ? <><Check size={12} /> Đã sao chép!</> : <><Copy size={12} /> Sao chép</>}
+                </button>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={fetchTeamAndSubmissions}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-[11px] text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-all active:scale-95"
+          >
+            <ArrowClockwise size={13} /> Làm mới
+          </button>
         </div>
       </div>
 
@@ -153,13 +215,13 @@ export const TeamDetail: React.FC = () => {
             </h2>
             <div className="space-y-4">
               {team.members.map((m: any, idx: number) => (
-                <div key={idx} className="p-3 rounded-lg bg-slate-50 border border-dark-border/60 flex justify-between items-center">
+                <div key={m.userId || idx} className="p-3 rounded-lg bg-slate-50 border border-slate-200 flex justify-between items-center">
                   <div>
-                    <h4 className="text-xs font-semibold text-slate-900">{m.fullName}</h4>
-                    <p className="text-[10px] text-slate-500 font-mono">{m.email}</p>
+                    <h4 className="text-xs font-semibold text-slate-900">{m.fullName || 'Thành viên'}</h4>
+                    <p className="text-[10px] text-slate-500 font-mono">{m.email || ''}</p>
                   </div>
-                  {m.userId === team.leaderId && (
-                    <span className="rounded bg-tech-cyan/10 border border-tech-cyan/35 px-2 py-0.5 text-[9px] font-mono font-bold text-tech-cyan uppercase">
+                  {(m.userId === team.leaderId || m.roleInTeam === 'Leader') && (
+                    <span className="rounded bg-indigo-50 border border-indigo-200 px-2 py-0.5 text-[9px] font-mono font-bold text-indigo-700 uppercase">
                       Trưởng Nhóm
                     </span>
                   )}

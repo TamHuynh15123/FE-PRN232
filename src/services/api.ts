@@ -509,6 +509,61 @@ const handleFallback = <T>(path: string, options: RequestInit): T => {
     return { page: 1, pageSize: 20, totalCount: logs.length, totalPages: 1, items: logs } as unknown as T;
   }
 
+  // ── JUDGE ASSIGNMENTS routes ─────────────────────────────────────────────
+  // POST /judge-assignments/rounds/{roundId}/judges
+  if (cleanPath.match(/^judgeassignments\/rounds\/[^/]+\/judges$/) && method === 'POST') {
+    const roundId = cleanPath.split('/')[2];
+    const assignments: any[] = JSON.parse(localStorage.getItem('hack_judge_assignments') || '[]');
+    const alreadyExists = assignments.find((a: any) => a.roundId === roundId && a.judgeId === body.judgeId);
+    if (alreadyExists) throw new Error('Giám khảo này đã được phân công vào vòng thi này rồi.');
+    const users: any[] = JSON.parse(localStorage.getItem('hack_users') || '[]');
+    const judge = users.find((u: any) => u.id === body.judgeId);
+    const newAssignment = {
+      id: crypto.randomUUID(),
+      roundId,
+      judgeId: body.judgeId,
+      judgeName: judge?.fullName || 'Giám Khảo',
+      judgeEmail: judge?.email || '',
+      judgeRole: judge?.role || 'judge_internal',
+      assignedAt: new Date().toISOString(),
+    };
+    assignments.push(newAssignment);
+    localStorage.setItem('hack_judge_assignments', JSON.stringify(assignments));
+    return { message: 'Phân công giám khảo thành công.' } as unknown as T;
+  }
+
+  // DELETE /judge-assignments/rounds/{roundId}/judges/{judgeId}
+  if (cleanPath.match(/^judgeassignments\/rounds\/[^/]+\/judges\/[^/]+$/) && method === 'DELETE') {
+    const parts = cleanPath.split('/');
+    const roundId = parts[2];
+    const judgeId = parts[4];
+    let assignments: any[] = JSON.parse(localStorage.getItem('hack_judge_assignments') || '[]');
+    assignments = assignments.filter((a: any) => !(a.roundId === roundId && a.judgeId === judgeId));
+    localStorage.setItem('hack_judge_assignments', JSON.stringify(assignments));
+    return { message: 'Đã huỷ phân công giám khảo.' } as unknown as T;
+  }
+
+  // GET /judge-assignments/rounds/{roundId}
+  if (cleanPath.match(/^judgeassignments\/rounds\/[^/]+$/) && method === 'GET') {
+    const roundId = cleanPath.split('/')[2];
+    const assignments: any[] = JSON.parse(localStorage.getItem('hack_judge_assignments') || '[]');
+    return assignments.filter((a: any) => a.roundId === roundId) as unknown as T;
+  }
+
+  // GET /judge-assignments/judges/{judgeId}
+  if (cleanPath.match(/^judgeassignments\/judges\/[^/]+$/) && method === 'GET') {
+    const judgeId = cleanPath.split('/')[2];
+    const assignments: any[] = JSON.parse(localStorage.getItem('hack_judge_assignments') || '[]');
+    return assignments.filter((a: any) => a.judgeId === judgeId) as unknown as T;
+  }
+
+  // GET /submissions/round/{roundId}
+  if (cleanPath.match(/^submissions\/round\/[^/]+$/) && method === 'GET') {
+    const roundId = cleanPath.split('/')[2];
+    const subs: any[] = JSON.parse(localStorage.getItem('hack_submissions') || '[]');
+    return subs.filter((s: any) => s.roundId === roundId) as unknown as T;
+  }
+
   throw new Error(`Unsupported fallback route: ${cleanPath}`);
 };
 
@@ -541,6 +596,7 @@ export const api = {
   submissions: {
     submit: (body: any) => request<any>('/submissions', { method: 'POST', body: JSON.stringify(body) }),
     getByTeam: (teamId: string) => request<any[]>(`/submissions/team/${teamId}`),
+    getByRound: (roundId: string) => request<any[]>(`/submissions/round/${roundId}`),
   },
   scoring: {
     submitScores: (submissionId: string, body: any) => request<any>(`/scoring/submissions/${submissionId}`, { method: 'POST', body: JSON.stringify(body) }),
@@ -578,5 +634,15 @@ export const api = {
       if (params?.page) qs.set('page', String(params.page));
       return request<any>(`/audit-logs?${qs.toString()}`);
     },
+  },
+  judgeAssignments: {
+    assign: (roundId: string, judgeId: string) =>
+      request<any>(`/judgeassignments/rounds/${roundId}/judges`, { method: 'POST', body: JSON.stringify({ judgeId }) }),
+    remove: (roundId: string, judgeId: string) =>
+      request<any>(`/judgeassignments/rounds/${roundId}/judges/${judgeId}`, { method: 'DELETE' }),
+    getByRound: (roundId: string) =>
+      request<any[]>(`/judgeassignments/rounds/${roundId}`),
+    getByJudge: (judgeId: string) =>
+      request<any[]>(`/judgeassignments/judges/${judgeId}`),
   },
 };

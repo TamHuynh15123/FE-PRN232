@@ -10,9 +10,11 @@ export const TeamDetail: React.FC = () => {
   const [team, setTeam] = useState<any | null>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [eventRounds, setEventRounds] = useState<any[]>([]);
 
   // Submission Form State
   const [showSubForm, setShowSubForm] = useState(false);
+  const [selectedRoundId, setSelectedRoundId] = useState('');
   const [repoUrl, setRepoUrl] = useState('');
   const [demoUrl, setDemoUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
@@ -25,16 +27,29 @@ export const TeamDetail: React.FC = () => {
   const fetchTeamAndSubmissions = async () => {
     if (!user) { setLoading(false); return; }
     try {
-      // Gọi API BE: GET /teams/my (trả về tất cả teams user đang tham gia)
       const myTeams = await api.teams.getMyTeams();
       const teamList = Array.isArray(myTeams) ? myTeams : [];
 
       if (teamList.length > 0) {
-        // Lấy team đầu tiên (mới nhất, được sort theo createdAt desc từ BE)
         const firstTeam = teamList[0];
         setTeam(firstTeam);
 
-        // Load submissions theo teamId
+        // Load rounds của event để user chọn khi nộp bài
+        if (firstTeam.eventId) {
+          try {
+            const ev = await api.events.getById(firstTeam.eventId);
+            setEventRounds(ev?.rounds || []);
+            // Tự chọn round đang active (status = 'active' hoặc round đầu tiên chưa hết deadline)
+            const now = new Date();
+            const activeRound = (ev?.rounds || []).find((r: any) =>
+              r.status === 'active' || (r.submissionDeadline && new Date(r.submissionDeadline) > now)
+            );
+            if (activeRound) setSelectedRoundId(activeRound.id);
+          } catch {
+            setEventRounds([]);
+          }
+        }
+
         try {
           const subs = await api.submissions.getByTeam(firstTeam.id);
           setSubmissions(Array.isArray(subs) ? subs : []);
@@ -82,19 +97,22 @@ export const TeamDetail: React.FC = () => {
     e.preventDefault();
     if (!team || !repoUrl) return;
 
+    if (!selectedRoundId) {
+      setFormError('Vui lòng chọn vòng thi để nộp bài.');
+      return;
+    }
+
     setSubmitting(true);
     setFormMsg(null);
     setFormError(null);
 
     try {
-      // Hardcode active round for mock testing (Round 2: Sơ loại sản phẩm)
       await api.submissions.submit({
-        teamId: team.id,
-        roundId: 'r2',
+        roundId: selectedRoundId,
         repoUrl,
-        demoUrl,
-        videoUrl,
-        description: subDesc
+        demoUrl: demoUrl || undefined,
+        videoUrl: videoUrl || undefined,
+        description: subDesc || undefined
       });
       setFormMsg('Nộp bài thi thành công! Hệ thống đã ghi nhận liên kết và siêu dữ liệu git.');
       setRepoUrl('');
@@ -102,12 +120,13 @@ export const TeamDetail: React.FC = () => {
       setVideoUrl('');
       setSubDesc('');
       setShowSubForm(false);
-      
       // Reload submissions
       const data = await api.submissions.getByTeam(team.id);
-      setSubmissions(data);
+      setSubmissions(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setFormError(err.message || 'Lỗi khi nộp bài thi.');
+      // Hiển thị lỗi từ BE (tiếng Việt)
+      const msg = err.message || 'Lỗi khi nộp bài thi.';
+      setFormError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -262,7 +281,43 @@ export const TeamDetail: React.FC = () => {
             )}
 
             {showSubForm && (
-              <form onSubmit={handleSubmission} className="space-y-4 mb-6 p-6 rounded-lg bg-slate-50 border border-dark-border shadow-inner">
+              <form onSubmit={handleSubmission} className="space-y-4 mb-6 p-6 rounded-lg bg-slate-50 border border-slate-200 shadow-inner">
+                {/* Cảnh báo team chưa đủ thành viên */}
+                {team.members?.length < 3 && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 flex items-start gap-2 text-xs text-amber-700">
+                    <Warning size={16} className="shrink-0 mt-0.5" />
+                    <span>
+                      <strong>Lưu ý:</strong> Đội bạn hiện có <strong>{team.members?.length}</strong> thành viên.
+                      Quy định cần tối thiểu <strong>3 thành viên</strong> để nộp bài.
+                      Hãy mời thêm thành viên bằng invite code trước khi nộp.
+                    </span>
+                  </div>
+                )}
+
+                {/* Chọn vòng thi */}
+                <div>
+                  <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">
+                    Vòng thi *
+                  </label>
+                  {eventRounds.length > 0 ? (
+                    <select
+                      required
+                      value={selectedRoundId}
+                      onChange={(e) => setSelectedRoundId(e.target.value)}
+                      className="w-full rounded-lg border border-slate-200 bg-white py-2.5 px-3 text-xs text-slate-900 focus:outline-none focus:border-indigo-400 focus:ring-1 focus:ring-indigo-400 transition-all"
+                    >
+                      <option value="">-- Chọn vòng thi --</option>
+                      {eventRounds.map((r: any) => (
+                        <option key={r.id} value={r.id}>
+                          {r.name} {r.submissionDeadline ? `(Hạn: ${new Date(r.submissionDeadline).toLocaleDateString('vi-VN')})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <p className="text-xs text-slate-400 italic">Không tìm thấy vòng thi nào. Vui lòng liên hệ ban tổ chức.</p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-semibold uppercase tracking-wider text-slate-500 mb-2">GitHub / GitLab URL *</label>
@@ -270,7 +325,7 @@ export const TeamDetail: React.FC = () => {
                       type="url"
                       required
                       placeholder="https://github.com/username/project"
-                      className="w-full rounded bg-white border border-dark-border py-2 px-3 text-xs text-slate-900 focus:outline-none focus:border-tech-cyan font-mono"
+                      className="w-full rounded-lg border border-slate-200 bg-white py-2.5 px-3 text-xs text-slate-900 focus:outline-none focus:border-indigo-400 font-mono transition-all"
                       value={repoUrl}
                       onChange={(e) => setRepoUrl(e.target.value)}
                     />
@@ -280,7 +335,7 @@ export const TeamDetail: React.FC = () => {
                     <input
                       type="url"
                       placeholder="https://my-demo-app.vercel.app"
-                      className="w-full rounded bg-white border border-dark-border py-2 px-3 text-xs text-slate-900 focus:outline-none focus:border-tech-cyan font-mono"
+                      className="w-full rounded-lg border border-slate-200 bg-white py-2.5 px-3 text-xs text-slate-900 focus:outline-none focus:border-indigo-400 font-mono transition-all"
                       value={demoUrl}
                       onChange={(e) => setDemoUrl(e.target.value)}
                     />
@@ -293,7 +348,7 @@ export const TeamDetail: React.FC = () => {
                     <input
                       type="url"
                       placeholder="https://youtube.com/watch?v=..."
-                      className="w-full rounded bg-white border border-dark-border py-2 px-3 text-xs text-slate-900 focus:outline-none focus:border-tech-cyan font-mono"
+                      className="w-full rounded-lg border border-slate-200 bg-white py-2.5 px-3 text-xs text-slate-900 focus:outline-none focus:border-indigo-400 font-mono transition-all"
                       value={videoUrl}
                       onChange={(e) => setVideoUrl(e.target.value)}
                     />
@@ -303,7 +358,7 @@ export const TeamDetail: React.FC = () => {
                     <input
                       type="text"
                       placeholder="Công nghệ sử dụng, kiến trúc..."
-                      className="w-full rounded bg-white border border-dark-border py-2 px-3 text-xs text-slate-900 focus:outline-none focus:border-tech-cyan"
+                      className="w-full rounded-lg border border-slate-200 bg-white py-2.5 px-3 text-xs text-slate-900 focus:outline-none focus:border-indigo-400 transition-all"
                       value={subDesc}
                       onChange={(e) => setSubDesc(e.target.value)}
                     />
@@ -313,12 +368,13 @@ export const TeamDetail: React.FC = () => {
                 <div className="flex gap-2 justify-end pt-2">
                   <button
                     type="button"
-                    onClick={() => setShowSubForm(false)}
-                    className="rounded border border-dark-border px-3 py-1.5 text-xs text-slate-500 hover:text-slate-900"
+                    onClick={() => { setShowSubForm(false); setFormError(null); }}
+                    className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-900 hover:border-slate-300 transition-all"
                   >
                     HỦY
                   </button>
                   <button
+
                     type="submit"
                     disabled={submitting}
                     className="rounded bg-tech-cyan px-4 py-1.5 text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50"

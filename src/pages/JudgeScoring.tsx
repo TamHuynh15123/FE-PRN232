@@ -3,17 +3,33 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Star, CheckCircle, Warning, ArrowRight, LinkSimple, GithubLogo, Trophy } from '@phosphor-icons/react';
 
-// Lấy tất cả submissions từ các vòng giám khảo được phân công
-// (fallback: lấy từ tất cả events/rounds)
-const loadJudgeData = async () => {
+const loadJudgeData = async (judgeId: string) => {
+  if (!judgeId) return [];
+  
+  // Lấy sự kiện để lấy tiêu đề và tiêu chí
   const events = await api.events.getAll();
+  
+  // 1. Lấy danh sách phân công của giám khảo này
+  const assignments = await api.judgeAssignments.getByJudge(judgeId).catch(() => []);
+  const roundIds = Array.from(new Set(assignments.map((a: any) => a.roundId)));
+  
+  // 2. Lấy bài nộp cho từng vòng được phân công
   const allSubs: any[] = [];
-  for (const ev of events) {
-    for (const round of ev.rounds || []) {
-      const subs = JSON.parse(localStorage.getItem('hack_submissions') || '[]').filter((s: any) => s.roundId === round.id);
-      for (const sub of subs) {
-        allSubs.push({ ...sub, eventTitle: ev.title, roundName: round.name, roundId: round.id, criteria: ev.criteria || [] });
-      }
+  for (const roundId of roundIds) {
+    const subs = await api.submissions.getByRound(roundId as string).catch(() => []);
+    
+    // Tìm thông tin sự kiện & vòng thi
+    const ev = events.find((e: any) => e.rounds?.some((r: any) => r.id === roundId));
+    const roundName = ev?.rounds?.find((r: any) => r.id === roundId)?.name || 'Vòng thi';
+    
+    for (const sub of subs) {
+      allSubs.push({
+        ...sub,
+        eventTitle: ev?.title || 'Sự kiện',
+        roundName,
+        roundId,
+        criteria: ev?.criteria || []
+      });
     }
   }
   return allSubs;
@@ -31,11 +47,15 @@ export const JudgeScoring: React.FC = () => {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    loadJudgeData().then(data => {
-      setSubmissions(data);
+    if (user?.id) {
+      loadJudgeData(user.id).then(data => {
+        setSubmissions(data);
+        setLoading(false);
+      }).catch(() => setLoading(false));
+    } else {
       setLoading(false);
-    }).catch(() => setLoading(false));
-  }, []);
+    }
+  }, [user?.id]);
 
   const handleSelect = async (sub: any) => {
     setSelected(sub);

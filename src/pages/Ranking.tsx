@@ -62,9 +62,8 @@ const ResultTable: React.FC<{ results: any[]; showCalculate?: boolean; onCalcula
           {results.map((r, idx) => (
             <tr
               key={r.submissionId || idx}
-              className={`transition-colors ${
-                r.rank <= 3 ? 'bg-amber-50/60 hover:bg-amber-50' : 'bg-white hover:bg-slate-50'
-              }`}
+              className={`transition-colors ${r.rank <= 3 ? 'bg-amber-50/60 hover:bg-amber-50' : 'bg-white hover:bg-slate-50'
+                }`}
             >
               <td className="px-6 py-4">
                 <RankBadge rank={r.rank} isAdvanced={r.isAdvanced} />
@@ -188,11 +187,10 @@ export const Ranking: React.FC = () => {
           </h1>
         </div>
         <div className="text-right">
-          <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase font-mono border ${
-            event.status === 'active' || event.status === 'ongoing'
-              ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-              : 'bg-slate-100 border-slate-200 text-slate-600'
-          }`}>
+          <span className={`rounded-full px-3 py-1 text-[10px] font-bold uppercase font-mono border ${event.status === 'active' || event.status === 'ongoing'
+            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+            : 'bg-slate-100 border-slate-200 text-slate-600'
+            }`}>
             {event.status?.toUpperCase()}
           </span>
         </div>
@@ -202,9 +200,8 @@ export const Ranking: React.FC = () => {
       <div className="mb-6 flex gap-1 overflow-x-auto rounded-xl bg-slate-100 p-1">
         <button
           onClick={() => setActiveTab('event')}
-          className={`shrink-0 rounded-lg px-4 py-2 text-xs font-mono font-semibold uppercase transition-all ${
-            activeTab === 'event' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-          }`}
+          className={`shrink-0 rounded-lg px-4 py-2 text-xs font-mono font-semibold uppercase transition-all ${activeTab === 'event' ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+            }`}
         >
           Tổng thể
         </button>
@@ -212,9 +209,8 @@ export const Ranking: React.FC = () => {
           <button
             key={r.id}
             onClick={() => setActiveTab(r.id)}
-            className={`shrink-0 rounded-lg px-4 py-2 text-xs font-mono font-semibold uppercase transition-all ${
-              activeTab === r.id ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
-            }`}
+            className={`shrink-0 rounded-lg px-4 py-2 text-xs font-mono font-semibold uppercase transition-all ${activeTab === r.id ? 'bg-white text-indigo-700 shadow-sm' : 'text-slate-500 hover:text-slate-800'
+              }`}
           >
             {r.name}
           </button>

@@ -175,11 +175,10 @@ export const OrganizerAdmin: React.FC = () => {
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
-              className={`shrink-0 pb-3 px-3 flex items-center gap-1.5 border-b-2 text-xs font-mono font-semibold uppercase tracking-wider transition-all ${
-                activeTab === tab.key
-                  ? 'border-tech-cyan text-tech-cyan'
-                  : 'border-transparent text-slate-400 hover:text-slate-700'
-              }`}
+              className={`shrink-0 pb-3 px-3 flex items-center gap-1.5 border-b-2 text-xs font-mono font-semibold uppercase tracking-wider transition-all ${activeTab === tab.key
+                ? 'border-tech-cyan text-tech-cyan'
+                : 'border-transparent text-slate-400 hover:text-slate-700'
+                }`}
             >
               {tab.icon} {tab.label}
             </button>
@@ -340,11 +339,10 @@ export const OrganizerAdmin: React.FC = () => {
                           </span>
                         </td>
                         <td className="p-4">
-                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${
-                            u.status === 'approved' ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-                              : u.status === 'pending_approval' ? 'bg-amber-50 border-amber-200 text-amber-700'
+                          <span className={`rounded-full px-2 py-0.5 text-[9px] font-bold border ${u.status === 'approved' ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            : u.status === 'pending_approval' ? 'bg-amber-50 border-amber-200 text-amber-700'
                               : 'bg-rose-50 border-rose-200 text-rose-600'
-                          }`}>
+                            }`}>
                             {u.status === 'approved' ? 'Đã duyệt' : u.status === 'pending_approval' ? 'Chờ duyệt' : u.status}
                           </span>
                         </td>
@@ -542,8 +540,10 @@ export const OrganizerAdmin: React.FC = () => {
                 <p className="text-[11px] text-slate-500 mb-6">Mẫu tiêu chí định nghĩa các hạng mục chấm điểm.</p>
                 <button
                   onClick={() => {
-                    const t = [{ id: crypto.randomUUID(), name: 'Mẫu Đánh Giá Lập Trình Cơ Bản', description: 'Mẫu mặc định gồm kỹ năng code, database và demo.',
-                      items: [{ name: 'Source Code & Clean Code', maxScore: 10, weight: 0.4 }, { name: 'Database Structure', maxScore: 10, weight: 0.3 }, { name: 'Demo & Presenting', maxScore: 10, weight: 0.3 }] }];
+                    const t = [{
+                      id: crypto.randomUUID(), name: 'Mẫu Đánh Giá Lập Trình Cơ Bản', description: 'Mẫu mặc định gồm kỹ năng code, database và demo.',
+                      items: [{ name: 'Source Code & Clean Code', maxScore: 10, weight: 0.4 }, { name: 'Database Structure', maxScore: 10, weight: 0.3 }, { name: 'Demo & Presenting', maxScore: 10, weight: 0.3 }]
+                    }];
                     setTemplates(t); localStorage.setItem('hack_templates', JSON.stringify(t));
                   }}
                   className="rounded-lg bg-indigo-600 px-5 py-2 text-xs font-bold text-white hover:bg-indigo-700 active:scale-95 transition-all">

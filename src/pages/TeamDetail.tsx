@@ -6,7 +6,7 @@ import { Users, Clipboard, Plus, CheckCircle, Warning, GithubLogo, YoutubeLogo, 
 
 export const TeamDetail: React.FC = () => {
   const { user } = useAuth();
-  
+
   const [team, setTeam] = useState<any | null>(null);
   const [submissions, setSubmissions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -19,7 +19,7 @@ export const TeamDetail: React.FC = () => {
   const [demoUrl, setDemoUrl] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [subDesc, setSubDesc] = useState('');
-  
+
   const [formMsg, setFormMsg] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -206,9 +206,8 @@ export const TeamDetail: React.FC = () => {
                 <span className="text-xl font-black text-indigo-600 tracking-[0.25em]">{team.inviteCode}</span>
                 <button
                   onClick={handleCopyCode}
-                  className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-bold transition-all active:scale-95 ${
-                    copied ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
-                  }`}
+                  className={`flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-bold transition-all active:scale-95 ${copied ? 'bg-emerald-100 text-emerald-600 border border-emerald-200' : 'bg-white text-slate-500 border border-slate-200 hover:border-indigo-300 hover:text-indigo-600'
+                    }`}
                   title="Sao chép mã mời"
                 >
                   {copied ? <><Check size={12} /> Đã sao chép!</> : <><Copy size={12} /> Sao chép</>}

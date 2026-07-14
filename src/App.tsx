@@ -10,6 +10,7 @@ import { TeamDetail } from './pages/TeamDetail';
 import { OrganizerAdmin } from './pages/OrganizerAdmin';
 import { JudgeScoring } from './pages/JudgeScoring';
 import { Ranking } from './pages/Ranking';
+import { ScoreOverview } from './pages/ScoreOverview';
 
 // ── Route guards ────────────────────────────────────────────────────────────
 
@@ -60,6 +61,8 @@ const AppLayout: React.FC = () => {
 
           {/* Organizer only */}
           <Route path="/organizer" element={<OrganizerRoute><OrganizerAdmin /></OrganizerRoute>} />
+          <Route path="/score-overview/:eventId" element={<OrganizerRoute><ScoreOverview /></OrganizerRoute>} />
+          <Route path="/score-overview" element={<OrganizerRoute><ScoreOverview /></OrganizerRoute>} />
 
           {/* Judge only */}
           <Route path="/judge/scoring" element={<JudgeRoute><JudgeScoring /></JudgeRoute>} />

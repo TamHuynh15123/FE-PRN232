@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { SignOut, TerminalWindow, User, Shield, Users, Calendar, Star } from '@phosphor-icons/react';
+import { SignOut, TerminalWindow, User, Shield, Users, Calendar, Star, ChartBar } from '@phosphor-icons/react';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuth();
@@ -33,9 +33,14 @@ export const Header: React.FC = () => {
                 <Calendar size={16} /> Sự Kiện
               </Link>
               {isOrganizer && (
-                <Link to="/organizer" className="flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 transition-colors">
-                  <Shield size={16} /> Quản Trị BTC
-                </Link>
+                <>
+                  <Link to="/organizer" className="flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 transition-colors">
+                    <Shield size={16} /> Quản Trị BTC
+                  </Link>
+                  <Link to="/score-overview" className="flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 transition-colors">
+                    <ChartBar size={16} /> Tổng Quan Điểm
+                  </Link>
+                </>
               )}
               {isStudent && (
                 <Link to="/team" className="flex items-center gap-1.5 text-slate-600 hover:text-indigo-600 transition-colors">

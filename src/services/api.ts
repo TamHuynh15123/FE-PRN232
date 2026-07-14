@@ -1,8 +1,6 @@
-// API service layer for Hackathon Management System
-// Points to the local C# Backend: https://localhost:7117/api
-// Uses LocalStorage fallback for seamless visual testing when the backend is offline
-
-const BASE_URL = 'https://localhost:7117/api';
+// Khi chạy dev: Vite proxy sẽ forward /api/* -> https://localhost:7117/api
+// (xem vite.config.ts) → giải quyết CORS + HTTPS self-signed cert
+const BASE_URL = '/api';
 
 // Seed initial data for fallback matching ApplicationDbContext seeds
 const DEFAULT_USERS = [
@@ -511,7 +509,7 @@ const handleFallback = <T>(path: string, options: RequestInit): T => {
 
   // ── JUDGE ASSIGNMENTS routes ─────────────────────────────────────────────
   // POST /judge-assignments/rounds/{roundId}/judges
-  if (cleanPath.match(/^judgeassignments\/rounds\/[^/]+\/judges$/) && method === 'POST') {
+  if (cleanPath.match(/^JudgeAssignments\/rounds\/[^/]+\/judges$/) && method === 'POST') {
     const roundId = cleanPath.split('/')[2];
     const assignments: any[] = JSON.parse(localStorage.getItem('hack_judge_assignments') || '[]');
     const alreadyExists = assignments.find((a: any) => a.roundId === roundId && a.judgeId === body.judgeId);
@@ -533,7 +531,7 @@ const handleFallback = <T>(path: string, options: RequestInit): T => {
   }
 
   // DELETE /judge-assignments/rounds/{roundId}/judges/{judgeId}
-  if (cleanPath.match(/^judgeassignments\/rounds\/[^/]+\/judges\/[^/]+$/) && method === 'DELETE') {
+  if (cleanPath.match(/^JudgeAssignments\/rounds\/[^/]+\/judges\/[^/]+$/) && method === 'DELETE') {
     const parts = cleanPath.split('/');
     const roundId = parts[2];
     const judgeId = parts[4];
@@ -544,14 +542,14 @@ const handleFallback = <T>(path: string, options: RequestInit): T => {
   }
 
   // GET /judge-assignments/rounds/{roundId}
-  if (cleanPath.match(/^judgeassignments\/rounds\/[^/]+$/) && method === 'GET') {
+  if (cleanPath.match(/^JudgeAssignments\/rounds\/[^/]+$/) && method === 'GET') {
     const roundId = cleanPath.split('/')[2];
     const assignments: any[] = JSON.parse(localStorage.getItem('hack_judge_assignments') || '[]');
     return assignments.filter((a: any) => a.roundId === roundId) as unknown as T;
   }
 
   // GET /judge-assignments/judges/{judgeId}
-  if (cleanPath.match(/^judgeassignments\/judges\/[^/]+$/) && method === 'GET') {
+  if (cleanPath.match(/^JudgeAssignments\/judges\/[^/]+$/) && method === 'GET') {
     const judgeId = cleanPath.split('/')[2];
     const assignments: any[] = JSON.parse(localStorage.getItem('hack_judge_assignments') || '[]');
     return assignments.filter((a: any) => a.judgeId === judgeId) as unknown as T;
@@ -637,12 +635,12 @@ export const api = {
   },
   judgeAssignments: {
     assign: (roundId: string, judgeId: string) =>
-      request<any>(`/judgeassignments/rounds/${roundId}/judges`, { method: 'POST', body: JSON.stringify({ judgeId }) }),
+      request<any>(`/JudgeAssignments/rounds/${roundId}/judges`, { method: 'POST', body: JSON.stringify({ judgeId }) }),
     remove: (roundId: string, judgeId: string) =>
-      request<any>(`/judgeassignments/rounds/${roundId}/judges/${judgeId}`, { method: 'DELETE' }),
+      request<any>(`/JudgeAssignments/rounds/${roundId}/judges/${judgeId}`, { method: 'DELETE' }),
     getByRound: (roundId: string) =>
-      request<any[]>(`/judgeassignments/rounds/${roundId}`),
+      request<any[]>(`/JudgeAssignments/rounds/${roundId}`),
     getByJudge: (judgeId: string) =>
-      request<any[]>(`/judgeassignments/judges/${judgeId}`),
+      request<any[]>(`/JudgeAssignments/judges/${judgeId}`),
   },
 };

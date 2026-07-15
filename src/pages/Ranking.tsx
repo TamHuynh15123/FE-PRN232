@@ -7,43 +7,6 @@ import {
   Star, Clock, Spinner, TrendUp
 } from '@phosphor-icons/react';
 
-const DEMO_EVENT = {
-  id: 'e1111111-1111-1111-1111-111111111111',
-  title: 'FPT Edu Hackathon 2026',
-  status: 'active',
-  rounds: [
-    { id: 'r1', name: 'Vòng Đăng Ký & Ý Tưởng', roundOrder: 1, status: 'completed', submissionDeadline: new Date(Date.now() - 86400000 * 5).toISOString() },
-    { id: 'r2', name: 'Vòng Sơ Loại Sản Phẩm', roundOrder: 2, status: 'active', submissionDeadline: new Date(Date.now() + 86400000 * 7).toISOString() },
-    { id: 'r3', name: 'Chung Kết Tổng', roundOrder: 3, status: 'upcoming', submissionDeadline: new Date(Date.now() + 86400000 * 15).toISOString() },
-  ]
-};
-
-const DEMO_RANKINGS: Record<string, any> = {
-  'r2': {
-    roundId: 'r2', roundName: 'Vòng Sơ Loại Sản Phẩm',
-    calculatedAt: new Date(Date.now() - 3600000).toISOString(),
-    results: [
-      { submissionId: 's1', teamName: 'Team Alpha', categoryName: 'Trí Tuệ Nhân Tạo (AI)', totalScore: 92.5, rank: 1, isAdvanced: true },
-      { submissionId: 's2', teamName: 'Team Sigma', categoryName: 'Trí Tuệ Nhân Tạo (AI)', totalScore: 88.0, rank: 2, isAdvanced: true },
-      { submissionId: 's3', teamName: 'Team Nexus', categoryName: 'Thiết Bị Thông Minh (IoT)', totalScore: 85.5, rank: 3, isAdvanced: true },
-      { submissionId: 's4', teamName: 'Team Nova', categoryName: 'Thiết Bị Thông Minh (IoT)', totalScore: 79.0, rank: 4, isAdvanced: false },
-      { submissionId: 's5', teamName: 'Team Apex', categoryName: 'Trí Tuệ Nhân Tạo (AI)', totalScore: 74.5, rank: 5, isAdvanced: false },
-      { submissionId: 's6', teamName: 'Team Pixel', categoryName: 'Thiết Bị Thông Minh (IoT)', totalScore: 68.0, rank: 6, isAdvanced: false },
-    ]
-  },
-  'event': {
-    finalRoundName: 'Vòng Sơ Loại Sản Phẩm',
-    calculatedAt: new Date(Date.now() - 3600000).toISOString(),
-    results: [
-      { submissionId: 's1', teamName: 'Team Alpha', categoryName: 'AI', totalScore: 92.5, rank: 1, isAdvanced: true },
-      { submissionId: 's2', teamName: 'Team Sigma', categoryName: 'AI', totalScore: 88.0, rank: 2, isAdvanced: true },
-      { submissionId: 's3', teamName: 'Team Nexus', categoryName: 'IoT', totalScore: 85.5, rank: 3, isAdvanced: true },
-      { submissionId: 's4', teamName: 'Team Nova', categoryName: 'IoT', totalScore: 79.0, rank: 4, isAdvanced: false },
-      { submissionId: 's5', teamName: 'Team Apex', categoryName: 'AI', totalScore: 74.5, rank: 5, isAdvanced: false },
-      { submissionId: 's6', teamName: 'Team Pixel', categoryName: 'IoT', totalScore: 68.0, rank: 6, isAdvanced: false },
-    ]
-  }
-};
 
 const scoreColor = (s: number) => {
   if (s >= 85) return { text: 'text-emerald-600', bg: 'bg-emerald-100', bar: 'bg-emerald-400', border: 'border-emerald-200' };
@@ -112,23 +75,13 @@ const TopThreeCards: React.FC<{ results: any[] }> = ({ results }) => {
 
 const ResultTable: React.FC<{
   results: any[];
-  showCalculate?: boolean;
-  onCalculate?: () => void;
-  calculating?: boolean;
-}> = ({ results, showCalculate, onCalculate, calculating }) => {
+}> = ({ results }) => {
   if (results.length === 0) {
     return (
       <div className="py-16 text-center rounded-xl border border-dashed border-slate-200 bg-white">
         <ChartBar size={44} className="mx-auto mb-3 text-slate-200" />
         <p className="text-sm font-mono text-slate-400 mb-1">Chưa có kết quả xếp hạng.</p>
         <p className="text-[11px] text-slate-400 mb-4">Cần tính toán xếp hạng để hiển thị kết quả.</p>
-        {showCalculate && (
-          <button onClick={onCalculate} disabled={calculating}
-            className="inline-flex items-center gap-2 rounded-lg bg-tech-cyan px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 active:scale-95 transition-all disabled:opacity-50">
-            {calculating ? <Spinner className="animate-spin" size={15} /> : <Lightning size={15} weight="fill" />}
-            {calculating ? 'Đang tính toán...' : 'Tính Xếp Hạng Ngay'}
-          </button>
-        )}
       </div>
     );
   }
@@ -208,7 +161,6 @@ export const Ranking: React.FC = () => {
   const [eventRanking, setEventRanking] = useState<any | null>(null);
   const [roundRankings, setRoundRankings] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
-  const [calculating, setCalculating] = useState(false);
 
   const isOrganizer = user?.role === 'organizer';
 
@@ -217,37 +169,26 @@ export const Ranking: React.FC = () => {
     const load = async () => {
       try {
         const ev = await api.events.getById(eventId);
-        setEvent(ev || DEMO_EVENT);
+        setEvent(ev);
         const evRanking = await api.ranking.getEvent(eventId);
-        setEventRanking(evRanking?.results?.length > 0 ? evRanking : DEMO_RANKINGS['event']);
+        setEventRanking(evRanking?.results?.length > 0 ? evRanking : null);
         const rr: Record<string, any> = {};
-        for (const round of (ev || DEMO_EVENT).rounds || []) {
+        for (const round of ev?.rounds || []) {
+          await api.ranking.calculate(round.id).catch(() => {});
           const rk = await api.ranking.getRound(round.id);
-          rr[round.id] = rk?.results?.length > 0 ? rk : (DEMO_RANKINGS[round.id] || { results: [] });
+          rr[round.id] = rk?.results?.length > 0 ? rk : { results: [] };
         }
         setRoundRankings(rr);
       } catch {
-        setEvent(DEMO_EVENT);
-        setEventRanking(DEMO_RANKINGS['event']);
-        const rr: Record<string, any> = {};
-        for (const r of DEMO_EVENT.rounds) rr[r.id] = DEMO_RANKINGS[r.id] || { results: [] };
-        setRoundRankings(rr);
+        setEvent(null);
+        setEventRanking(null);
+        setRoundRankings({});
       } finally { setLoading(false); }
     };
     load();
   }, [eventId]);
 
-  const handleCalculate = async (roundId: string) => {
-    setCalculating(true);
-    try {
-      const result = await api.ranking.calculate(roundId);
-      setRoundRankings(prev => ({ ...prev, [roundId]: result?.results?.length > 0 ? result : DEMO_RANKINGS[roundId] }));
-      const evRanking = await api.ranking.getEvent(eventId!);
-      setEventRanking(evRanking?.results?.length > 0 ? evRanking : DEMO_RANKINGS['event']);
-    } catch {
-      setRoundRankings(prev => ({ ...prev, [roundId]: DEMO_RANKINGS[roundId] || { results: [] } }));
-    } finally { setCalculating(false); }
-  };
+
 
   if (loading) {
     return (
@@ -257,11 +198,11 @@ export const Ranking: React.FC = () => {
     );
   }
 
-  const currentEvent = event || DEMO_EVENT;
+  const currentEvent = event || { id: eventId, title: 'Đang tải...', rounds: [], status: 'unknown' };
   const activeRound = currentEvent.rounds?.find((r: any) => r.id === activeTab);
   const activeRoundRanking = activeTab !== 'event' ? roundRankings[activeTab] : null;
   const displayResults = activeTab === 'event'
-    ? (eventRanking?.results || DEMO_RANKINGS['event'].results)
+    ? (eventRanking?.results || [])
     : (activeRoundRanking?.results || []);
 
   const advancedCount = displayResults.filter((r: any) => r.isAdvanced).length;
@@ -367,16 +308,6 @@ export const Ranking: React.FC = () => {
                 {new Date(calcAt).toLocaleString('vi-VN')}
               </span>
             )}
-            {activeTab !== 'event' && isOrganizer && (
-              <button
-                onClick={() => activeRound && handleCalculate(activeRound.id)}
-                disabled={calculating}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-tech-cyan px-4 py-2 text-xs font-bold text-white hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
-              >
-                {calculating ? <Spinner className="animate-spin" size={13} /> : <Lightning size={13} weight="fill" />}
-                {calculating ? 'Đang tính...' : 'Tính Xếp Hạng'}
-              </button>
-            )}
           </div>
         </div>
 
@@ -394,9 +325,6 @@ export const Ranking: React.FC = () => {
 
           <ResultTable
             results={displayResults}
-            showCalculate={activeTab !== 'event' && isOrganizer}
-            onCalculate={() => activeRound && handleCalculate(activeRound.id)}
-            calculating={calculating}
           />
         </div>
       </div>

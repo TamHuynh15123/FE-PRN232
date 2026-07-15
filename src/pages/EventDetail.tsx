@@ -230,16 +230,13 @@ export const EventDetail: React.FC = () => {
         const newTeam = await api.teams.create({
           name: teamName,
           description: teamDesc,
-          categoryId: teamCat,
-          eventId: id,
-          leaderId: user.id
+          categoryId: teamCat
         });
         setStudentTeam(newTeam);
       } else {
         if (!inviteCode) return;
         const joinedTeam = await api.teams.join({
-          inviteCode,
-          userId: user.id
+          inviteCode
         });
         setStudentTeam(joinedTeam);
       }

@@ -17,50 +17,21 @@ const loadJudgeData = async (judgeId: string) => {
     const ev = events.find((e: any) => e.rounds?.some((r: any) => r.id === roundId));
     const round = ev?.rounds?.find((r: any) => r.id === roundId);
     for (const sub of subs) {
-      allSubs.push({ ...sub, eventTitle: ev?.title || 'Sự kiện', roundName: round?.name || 'Vòng thi', roundId, criteria: ev?.criteria || [] });
+      let teamName = sub.teamName;
+      let categoryName = sub.categoryName;
+      if (!teamName && sub.teamId) {
+        const team = await api.teams.getById(sub.teamId).catch(() => null);
+        if (team) {
+          teamName = team.name;
+          categoryName = team.categoryName || sub.categoryName;
+        }
+      }
+      allSubs.push({ ...sub, eventTitle: ev?.title || 'Sự kiện', roundName: round?.name || 'Vòng thi', roundId, criteria: ev?.criteria || [], teamName, categoryName });
     }
   }
   return allSubs;
 };
 
-const DEMO_SUBMISSIONS = [
-  {
-    id: 'sub-demo-1', teamId: 't1', roundId: 'r2',
-    eventTitle: 'FPT Edu Hackathon 2026', roundName: 'Vòng Sơ Loại Sản Phẩm',
-    repoUrl: 'https://github.com/team-alpha/smart-city-ai', demoUrl: 'https://demo.smartcityai.com',
-    repoLastCommitMessage: 'feat: Add AI-powered traffic prediction module',
-    repoPrimaryLanguage: 'TypeScript', repoStars: 24,
-    criteria: [
-      { id: 'cr1', name: 'Tính Đột Phá / Sáng Tạo', description: 'Ý tưởng có mới mẻ, độc đáo không?', weight: 0.3, maxScore: 10 },
-      { id: 'cr2', name: 'Tính Thực Tiễn', description: 'Khả năng ứng dụng và triển khai thực tế.', weight: 0.3, maxScore: 10 },
-      { id: 'cr3', name: 'Kỹ Thuật / Công Nghệ', description: 'Độ phức tạp và hoàn thiện của sản phẩm.', weight: 0.4, maxScore: 10 },
-    ]
-  },
-  {
-    id: 'sub-demo-2', teamId: 't2', roundId: 'r2',
-    eventTitle: 'FPT Edu Hackathon 2026', roundName: 'Vòng Sơ Loại Sản Phẩm',
-    repoUrl: 'https://github.com/team-beta/iot-smart-grid', demoUrl: null,
-    repoLastCommitMessage: 'fix: Optimize sensor data collection pipeline',
-    repoPrimaryLanguage: 'Python', repoStars: 8,
-    criteria: [
-      { id: 'cr1', name: 'Tính Đột Phá / Sáng Tạo', description: 'Ý tưởng có mới mẻ, độc đáo không?', weight: 0.3, maxScore: 10 },
-      { id: 'cr2', name: 'Tính Thực Tiễn', description: 'Khả năng ứng dụng và triển khai thực tế.', weight: 0.3, maxScore: 10 },
-      { id: 'cr3', name: 'Kỹ Thuật / Công Nghệ', description: 'Độ phức tạp và hoàn thiện của sản phẩm.', weight: 0.4, maxScore: 10 },
-    ]
-  },
-  {
-    id: 'sub-demo-3', teamId: 't3', roundId: 'r2',
-    eventTitle: 'FPT Edu Hackathon 2026', roundName: 'Vòng Sơ Loại Sản Phẩm',
-    repoUrl: 'https://github.com/team-gamma/urban-health', demoUrl: 'https://urban-health.vercel.app',
-    repoLastCommitMessage: 'docs: Update README with deployment guide',
-    repoPrimaryLanguage: 'JavaScript', repoStars: 15,
-    criteria: [
-      { id: 'cr1', name: 'Tính Đột Phá / Sáng Tạo', description: 'Ý tưởng có mới mẻ, độc đáo không?', weight: 0.3, maxScore: 10 },
-      { id: 'cr2', name: 'Tính Thực Tiễn', description: 'Khả năng ứng dụng và triển khai thực tế.', weight: 0.3, maxScore: 10 },
-      { id: 'cr3', name: 'Kỹ Thuật / Công Nghệ', description: 'Độ phức tạp và hoàn thiện của sản phẩm.', weight: 0.4, maxScore: 10 },
-    ]
-  },
-];
 
 const LANG_COLORS: Record<string, string> = {
   TypeScript: '#3178c6', JavaScript: '#f59e0b', Python: '#3572A5',
@@ -91,11 +62,11 @@ export const JudgeScoring: React.FC = () => {
   useEffect(() => {
     if (user?.id) {
       loadJudgeData(user.id).then(data => {
-        setSubmissions(data.length > 0 ? data : DEMO_SUBMISSIONS);
+        setSubmissions(data);
         setLoading(false);
-      }).catch(() => { setSubmissions(DEMO_SUBMISSIONS); setLoading(false); });
+      }).catch(() => { setSubmissions([]); setLoading(false); });
     } else {
-      setSubmissions(DEMO_SUBMISSIONS);
+      setSubmissions([]);
       setLoading(false);
     }
   }, [user?.id]);

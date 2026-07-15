@@ -19,6 +19,7 @@ export const OrganizerAdmin: React.FC = () => {
   // Tab 2: Create Guest Judge
   const [judgeEmail, setJudgeEmail] = useState('');
   const [judgeName, setJudgeName] = useState('');
+  const [judgePassword, setJudgePassword] = useState('');
   const [judgeLoading, setJudgeLoading] = useState(false);
   const [judgeMsg, setJudgeMsg] = useState<string | null>(null);
   const [judgeError, setJudgeError] = useState<string | null>(null);
@@ -122,12 +123,12 @@ export const OrganizerAdmin: React.FC = () => {
 
   const handleCreateJudge = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!judgeEmail || !judgeName) return;
+    if (!judgeEmail || !judgeName || !judgePassword) return;
     setJudgeLoading(true); setJudgeError(null); setJudgeMsg(null);
     try {
-      const res = await api.auth.createJudge({ email: judgeEmail, fullName: judgeName });
+      const res = await api.auth.createJudge({ email: judgeEmail, fullName: judgeName, temporaryPassword: judgePassword });
       setJudgeMsg(res.message || 'Tạo tài khoản giám khảo thành công.');
-      setJudgeEmail(''); setJudgeName('');
+      setJudgeEmail(''); setJudgeName(''); setJudgePassword('');
     } catch (err: any) { setJudgeError(err.message || 'Lỗi khi tạo tài khoản giám khảo.'); }
     finally { setJudgeLoading(false); }
   };
@@ -272,6 +273,12 @@ export const OrganizerAdmin: React.FC = () => {
                 <input type="email" required placeholder="judge.guest@example.com"
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-all"
                   value={judgeEmail} onChange={e => setJudgeEmail(e.target.value)} />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Mật khẩu tạm thời *</label>
+                <input type="text" required placeholder="Tối thiểu 6 ký tự..."
+                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2.5 px-4 text-xs text-slate-900 placeholder-slate-400 focus:border-indigo-400 focus:outline-none focus:ring-1 focus:ring-indigo-400 transition-all"
+                  value={judgePassword} onChange={e => setJudgePassword(e.target.value)} minLength={6} />
               </div>
               <button type="submit" disabled={judgeLoading}
                 className="w-full rounded-lg bg-indigo-600 py-2.5 text-xs font-bold text-white hover:bg-indigo-700 active:scale-[0.98] transition-all disabled:opacity-50 mt-2">

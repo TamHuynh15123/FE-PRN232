@@ -7,48 +7,7 @@ import {
   CheckCircle, Clock, Warning, ArrowUp, DownloadSimple, CaretDown, CaretUp
 } from '@phosphor-icons/react';
 
-const DEMO_SUBMISSIONS = [
-  {
-    id: 's1', teamName: 'Team Alpha', categoryName: 'Trí Tuệ Nhân Tạo (AI)',
-    roundId: 'r2', roundName: 'Vòng Sơ Loại', isAdvanced: true,
-    scores: [
-      { judgeId: 'j1', judgeName: 'Giám Khảo Nội Bộ', totalScore: 9.2, scoredAt: new Date(Date.now() - 7200000).toISOString(), criteriaScores: [{ name: 'Sáng tạo', score: 9.5 }, { name: 'Thực tiễn', score: 9.0 }, { name: 'Kỹ thuật', score: 9.1 }] },
-      { judgeId: 'j2', judgeName: 'Giám Khảo Khách Mời', totalScore: 9.3, scoredAt: new Date(Date.now() - 5400000).toISOString(), criteriaScores: [{ name: 'Sáng tạo', score: 9.8 }, { name: 'Thực tiễn', score: 9.0 }, { name: 'Kỹ thuật', score: 9.1 }] },
-    ]
-  },
-  {
-    id: 's2', teamName: 'Team Sigma', categoryName: 'Trí Tuệ Nhân Tạo (AI)',
-    roundId: 'r2', roundName: 'Vòng Sơ Loại', isAdvanced: true,
-    scores: [
-      { judgeId: 'j1', judgeName: 'Giám Khảo Nội Bộ', totalScore: 8.8, scoredAt: new Date(Date.now() - 3600000).toISOString(), criteriaScores: [{ name: 'Sáng tạo', score: 9.0 }, { name: 'Thực tiễn', score: 8.5 }, { name: 'Kỹ thuật', score: 8.9 }] },
-    ]
-  },
-  {
-    id: 's3', teamName: 'Team Nexus', categoryName: 'Thiết Bị Thông Minh (IoT)',
-    roundId: 'r2', roundName: 'Vòng Sơ Loại', isAdvanced: true,
-    scores: [
-      { judgeId: 'j1', judgeName: 'Giám Khảo Nội Bộ', totalScore: 8.5, scoredAt: new Date(Date.now() - 1800000).toISOString(), criteriaScores: [{ name: 'Sáng tạo', score: 8.0 }, { name: 'Thực tiễn', score: 8.8 }, { name: 'Kỹ thuật', score: 8.7 }] },
-      { judgeId: 'j2', judgeName: 'Giám Khảo Khách Mời', totalScore: 8.6, scoredAt: new Date(Date.now() - 900000).toISOString(), criteriaScores: [{ name: 'Sáng tạo', score: 8.2 }, { name: 'Thực tiễn', score: 8.9 }, { name: 'Kỹ thuật', score: 8.7 }] },
-    ]
-  },
-  {
-    id: 's4', teamName: 'Team Nova', categoryName: 'Thiết Bị Thông Minh (IoT)',
-    roundId: 'r2', roundName: 'Vòng Sơ Loại', isAdvanced: false,
-    scores: []
-  },
-  {
-    id: 's5', teamName: 'Team Apex', categoryName: 'Trí Tuệ Nhân Tạo (AI)',
-    roundId: 'r2', roundName: 'Vòng Sơ Loại', isAdvanced: false,
-    scores: [
-      { judgeId: 'j2', judgeName: 'Giám Khảo Khách Mời', totalScore: 7.4, scoredAt: new Date(Date.now() - 3000000).toISOString(), criteriaScores: [{ name: 'Sáng tạo', score: 7.5 }, { name: 'Thực tiễn', score: 7.3 }, { name: 'Kỹ thuật', score: 7.4 }] },
-    ]
-  },
-];
 
-const DEMO_JUDGES = [
-  { id: 'j1', name: 'Giám Khảo Nội Bộ', role: 'judge_internal', scoredCount: 4, totalCount: 5 },
-  { id: 'j2', name: 'Giám Khảo Khách Mời', role: 'judge_guest', scoredCount: 3, totalCount: 5 },
-];
 
 const scoreColor = (s: number) => {
   if (s >= 8.5) return { text: 'text-emerald-600', bar: 'bg-emerald-400' };
@@ -71,35 +30,83 @@ export const ScoreOverview: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<string>(eventId || '');
   const [loading, setLoading] = useState(true);
-  const [calculating, setCalculating] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'scored' | 'pending' | 'pass'>('all');
 
   useEffect(() => {
-    const load = async () => {
+    const loadEvents = async () => {
       try {
         const evs = await api.events.getAll();
         setEvents(evs || []);
         if (!selectedEvent && evs.length > 0) setSelectedEvent(evs[0].id);
-        const subs = await api.submissions.getByRound('r2').catch(() => []);
-        setSubmissions(subs.length > 0 ? subs : DEMO_SUBMISSIONS);
-        const us = await api.users.getAll({ role: 'judge_internal' }).catch(() => []);
-        const ug = await api.users.getAll({ role: 'judge_guest' }).catch(() => []);
-        setJudges([...us, ...ug].length > 0 ? [...us, ...ug] : DEMO_JUDGES);
-      } catch {
-        setSubmissions(DEMO_SUBMISSIONS);
-        setJudges(DEMO_JUDGES);
-      } finally { setLoading(false); }
+      } catch { }
     };
-    load();
+    if (events.length === 0) loadEvents();
   }, []);
 
-  const handleCalculate = async (roundId: string) => {
-    setCalculating(roundId);
-    try { await api.ranking.calculate(roundId); }
-    catch { }
-    finally { setCalculating(null); }
+  useEffect(() => {
+    if (!selectedEvent) return;
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const ev = await api.events.getById(selectedEvent);
+        const rounds = ev?.rounds || [];
+        let allSubs: any[] = [];
+        for (const r of rounds) {
+          const subs = await api.submissions.getByRound(r.id).catch(() => []);
+          const rk = await api.ranking.getRound(r.id).catch(() => null);
+          const subsWithDetails = subs.map((s: any) => {
+            const rankItem = rk?.results?.find((x: any) => x.teamId === s.teamId);
+            return { ...s, roundName: r.name, isAdvanced: rankItem?.isAdvanced || false };
+          });
+          allSubs = [...allSubs, ...subsWithDetails];
+        }
+
+        const subsWithScores = await Promise.all(
+          allSubs.map(async (s: any) => {
+            const sc = await api.scoring.getScores(s.id).catch(() => []);
+            let teamName = s.teamName;
+            let categoryName = s.categoryName;
+            if (!teamName && s.teamId) {
+              const team = await api.teams.getById(s.teamId).catch(() => null);
+              if (team) {
+                teamName = team.name;
+                categoryName = team.categoryName || s.categoryName;
+              }
+            }
+            return { ...s, scores: sc, teamName, categoryName };
+          })
+        );
+        setSubmissions(subsWithScores);
+
+        const us = await api.users.getAll({ role: 'judge_internal' }).catch(() => ({ items: [] }));
+        const ug = await api.users.getAll({ role: 'judge_guest' }).catch(() => ({ items: [] }));
+        setJudges([...(us.items || []), ...(ug.items || [])]);
+      } catch {
+        setSubmissions([]);
+        setJudges([]);
+      } finally { setLoading(false); }
+    };
+    loadData();
+  }, [selectedEvent]);
+
+  const handleDownloadCsv = async () => {
+    if (!selectedEvent) return;
+    try {
+      const res = await fetch(`/api/exports/events/${selectedEvent}/ranking/csv`, {
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
+      });
+      if (!res.ok) throw new Error('Không thể tải CSV.');
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ranking_${selectedEvent}.csv`;
+      a.click();
+    } catch (err: any) {
+      alert(err.message || 'Lỗi xuất CSV.');
+    }
   };
 
   const scored = submissions.filter(s => s.scores?.length > 0);
@@ -113,8 +120,8 @@ export const ScoreOverview: React.FC = () => {
     : 0;
 
   const filtered = submissions.filter(s => {
-    const matchSearch = s.teamName.toLowerCase().includes(search.toLowerCase()) ||
-      s.categoryName.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = (s.teamName || '').toLowerCase().includes(search.toLowerCase()) ||
+      (s.categoryName || '').toLowerCase().includes(search.toLowerCase());
     const matchStatus =
       filterStatus === 'all' ? true :
       filterStatus === 'scored' ? s.scores?.length > 0 :
@@ -163,12 +170,12 @@ export const ScoreOverview: React.FC = () => {
               {events.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
             </select>
           )}
-          <a
-            href={selectedEvent ? `/api/exports/events/${selectedEvent}/ranking/csv` : '#'}
+          <button
+            onClick={handleDownloadCsv}
             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-mono text-slate-600 hover:border-slate-300 hover:text-slate-900 transition-all"
           >
             <DownloadSimple size={14} /> CSV
-          </a>
+          </button>
         </div>
       </div>
 
@@ -199,9 +206,10 @@ export const ScoreOverview: React.FC = () => {
           <h2 className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-500">Tiến độ giám khảo</h2>
         </div>
         <div className="p-5 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {(judges.length > 0 ? judges : DEMO_JUDGES).map((j: any) => {
-            const pct = j.totalCount > 0 ? (j.scoredCount / j.totalCount) * 100 : 0;
-            const done = pct >= 100;
+          {judges.map((j: any) => {
+            const jScoredCount = submissions.filter(s => s.scores?.some((sc: any) => sc.judgeId === j.id)).length;
+            const pct = submissions.length > 0 ? (jScoredCount / submissions.length) * 100 : 0;
+            const done = submissions.length > 0 && pct >= 100;
             return (
               <div key={j.id} className={`flex items-center gap-3 rounded-xl border p-3.5 ${done ? 'bg-emerald-50 border-emerald-200' : 'bg-white border-slate-200'}`}>
                 <Avatar name={j.name || j.fullName || 'J'} />
@@ -213,7 +221,7 @@ export const ScoreOverview: React.FC = () => {
                         style={{ width: `${pct}%` }} />
                     </div>
                     <span className={`text-[10px] font-mono font-bold shrink-0 ${done ? 'text-emerald-600' : 'text-slate-500'}`}>
-                      {j.scoredCount || 0}/{j.totalCount || submissions.length}
+                      {jScoredCount}/{submissions.length}
                     </span>
                   </div>
                 </div>
@@ -257,7 +265,7 @@ export const ScoreOverview: React.FC = () => {
           <div className="col-span-2">Vòng</div>
           <div className="col-span-2">Điểm TB</div>
           <div className="col-span-2">Giám khảo</div>
-          <div className="col-span-1 text-center">TT</div>
+          <div className="col-span-1 text-center">Trạng Thái</div>
         </div>
 
         {/* Table rows */}
@@ -407,17 +415,6 @@ export const ScoreOverview: React.FC = () => {
           </div>
         )}
 
-        {/* Footer: calculate button */}
-        <div className="px-5 py-4 border-t border-slate-100 bg-slate-50 flex justify-end">
-          <button
-            onClick={() => handleCalculate('r2')}
-            disabled={!!calculating}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-tech-cyan px-6 py-2.5 text-sm font-bold text-white shadow hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
-          >
-            {calculating ? <Spinner className="animate-spin" size={15} /> : <Lightning size={15} weight="fill" />}
-            {calculating ? 'Đang tính...' : 'Tính Xếp Hạng'}
-          </button>
-        </div>
       </div>
     </div>
   );

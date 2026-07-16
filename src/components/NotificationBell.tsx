@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Bell, Check, X } from '@phosphor-icons/react';
+import { Bell, Check } from '@phosphor-icons/react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { formatDistanceToNow } from 'date-fns';

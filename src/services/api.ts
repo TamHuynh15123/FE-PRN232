@@ -144,6 +144,7 @@ export const api = {
       a.remove();
       window.URL.revokeObjectURL(url);
     },
+  },
   notifications: {
     getMy: () => request<any[]>('/notifications/me'),
     markAsRead: (id: string) => request<any>(`/notifications/${id}/read`, { method: 'POST' }),

@@ -4,7 +4,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
   ChartBar, Trophy, ArrowLeft, Spinner, MagnifyingGlass,
-  CheckCircle, Clock, Warning, ArrowUp, DownloadSimple, CaretDown, CaretUp, FileXls
+  CheckCircle, Clock, Warning, ArrowUp, CaretDown, CaretUp, FileXls
 } from '@phosphor-icons/react';
 
 

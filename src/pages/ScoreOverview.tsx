@@ -364,52 +364,96 @@ export const ScoreOverview: React.FC = () => {
                     </div>
                   </button>
 
-                  {/* Expanded: per-judge breakdown */}
-                  {isExpanded && sub.scores?.length > 0 && (
+                  {/* Expanded: per-judge breakdown & Actions */}
+                  {isExpanded && (
                     <div className="px-5 pb-4 border-t border-cyan-100 bg-cyan-50/40">
-                      <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 pt-3 mb-3">Chi tiết điểm từng giám khảo</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        {sub.scores.map((sc: any) => {
-                          const jc = scoreColor(sc.totalScore);
-                          return (
-                            <div key={sc.judgeId} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-                              <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                  <Avatar name={sc.judgeName || 'J'} />
-                                  <p className="text-sm font-semibold text-slate-700">{sc.judgeName}</p>
+                      {sub.scores?.length > 0 ? (
+                        <>
+                          <p className="text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 pt-3 mb-3">Chi tiết điểm từng giám khảo</p>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            {sub.scores.map((sc: any) => {
+                              const jc = scoreColor(sc.totalScore);
+                              return (
+                                <div key={sc.judgeId} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <div className="flex items-center gap-2">
+                                      <Avatar name={sc.judgeName || 'J'} />
+                                      <p className="text-sm font-semibold text-slate-700">{sc.judgeName}</p>
+                                    </div>
+                                    <span className={`text-lg font-black font-mono ${jc.text}`}>{sc.totalScore.toFixed(1)}</span>
+                                  </div>
+                                  {sc.criteriaScores && (
+                                    <div className="space-y-1.5">
+                                      {sc.criteriaScores.map((cr: any, i: number) => {
+                                        const cc = scoreColor(cr.score);
+                                        return (
+                                          <div key={i} className="flex items-center gap-2">
+                                            <span className="text-[11px] text-slate-500 w-24 shrink-0 truncate">{cr.name}</span>
+                                            <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                              <div className={`h-full rounded-full ${cc.bar}`} style={{ width: `${(cr.score / 10) * 100}%` }} />
+                                            </div>
+                                            <span className={`text-[11px] font-mono font-bold w-6 text-right ${cc.text}`}>{cr.score}</span>
+                                          </div>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                  {sc.scoredAt && (
+                                    <p className="text-[9px] font-mono text-slate-400 mt-2 flex items-center gap-1">
+                                      <Clock size={9} />{new Date(sc.scoredAt).toLocaleString('vi-VN')}
+                                    </p>
+                                  )}
                                 </div>
-                                <span className={`text-lg font-black font-mono ${jc.text}`}>{sc.totalScore.toFixed(1)}</span>
-                              </div>
-                              {sc.criteriaScores && (
-                                <div className="space-y-1.5">
-                                  {sc.criteriaScores.map((cr: any, i: number) => {
-                                    const cc = scoreColor(cr.score);
-                                    return (
-                                      <div key={i} className="flex items-center gap-2">
-                                        <span className="text-[11px] text-slate-500 w-24 shrink-0 truncate">{cr.name}</span>
-                                        <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                          <div className={`h-full rounded-full ${cc.bar}`} style={{ width: `${(cr.score / 10) * 100}%` }} />
-                                        </div>
-                                        <span className={`text-[11px] font-mono font-bold w-6 text-right ${cc.text}`}>{cr.score}</span>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                              {sc.scoredAt && (
-                                <p className="text-[9px] font-mono text-slate-400 mt-2 flex items-center gap-1">
-                                  <Clock size={9} />{new Date(sc.scoredAt).toLocaleString('vi-VN')}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        })}
+                              );
+                            })}
+                          </div>
+                        </>
+                      ) : (
+                        <div className="pt-3 text-center">
+                          <p className="text-xs text-amber-600 font-mono">Bài này chưa được chấm điểm.</p>
+                        </div>
+                      )}
+
+                      {/* BTC Actions (Disqualifications) */}
+                      <div className="mt-4 pt-4 border-t border-slate-200/60 flex gap-3 justify-end">
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            const reason = window.prompt(`Nhập lý do loại bài nộp này:`);
+                            if (reason === null) return;
+                            if (!reason.trim()) { alert('Vui lòng nhập lý do.'); return; }
+                            try {
+                              await api.disqualifications.disqualifySubmission({ submissionId: sub.id, reason: reason.trim() });
+                              alert('Đã loại bài nộp thành công.');
+                              window.location.reload();
+                            } catch (err: any) {
+                              alert(err.message || 'Lỗi khi loại bài nộp.');
+                            }
+                          }}
+                          className="rounded bg-rose-50 hover:bg-rose-100 border border-rose-200 px-3 py-1.5 text-[11px] font-bold text-rose-600 transition-all active:scale-95"
+                        >
+                          Loại Bài Nộp
+                        </button>
+                        <button
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            if (!sub.teamId) return;
+                            const reason = window.prompt(`Nhập lý do hủy tư cách đội thi "${sub.teamName}":`);
+                            if (reason === null) return;
+                            if (!reason.trim()) { alert('Vui lòng nhập lý do hủy tư cách.'); return; }
+                            try {
+                              await api.disqualifications.disqualifyTeam({ teamId: sub.teamId, reason: reason.trim() });
+                              alert('Đã hủy tư cách đội thi thành công.');
+                              window.location.reload();
+                            } catch (err: any) {
+                              alert(err.message || 'Lỗi khi loại đội thi.');
+                            }
+                          }}
+                          className="rounded bg-rose-600 hover:bg-rose-700 px-3 py-1.5 text-[11px] font-bold text-white transition-all active:scale-95 shadow-sm"
+                        >
+                          Loại Đội Thi
+                        </button>
                       </div>
-                    </div>
-                  )}
-                  {isExpanded && (!sub.scores || sub.scores.length === 0) && (
-                    <div className="px-5 pb-4 pt-3 border-t border-amber-100 bg-amber-50/40 text-center">
-                      <p className="text-xs text-amber-600 font-mono">Bài này chưa được chấm điểm.</p>
                     </div>
                   )}
                 </div>

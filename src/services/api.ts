@@ -58,6 +58,7 @@ export const api = {
     getPending: () => request<any[]>('/accounts/pending'),
     reviewPending: (body: any) => request<any>('/accounts/review', { method: 'POST', body: JSON.stringify(body) }),
     createJudge: (body: any) => request<any>('/accounts/guest-judge', { method: 'POST', body: JSON.stringify(body) }),
+    suspendUser: (userId: string, reason: string) => request<any>(`/accounts/${userId}/suspend`, { method: 'POST', body: JSON.stringify({ reason }) }),
   },
   events: {
     getAll: () => request<any[]>('/events'),
@@ -149,4 +150,14 @@ export const api = {
     getMy: () => request<any[]>('/notifications/me'),
     markAsRead: (id: string) => request<any>(`/notifications/${id}/read`, { method: 'POST' }),
   },
+  criteriaTemplates: {
+    getAll: () => request<any[]>('/criteria-templates'),
+    create: (body: any) => request<any>('/criteria-templates', { method: 'POST', body: JSON.stringify(body) }),
+    delete: (id: string) => request<any>(`/criteria-templates/${id}`, { method: 'DELETE' }),
+  },
+  disqualifications: {
+    disqualifyTeam: (body: any) => request<any>('/disqualifications/team', { method: 'POST', body: JSON.stringify(body) }),
+    disqualifySubmission: (body: any) => request<any>('/disqualifications/submission', { method: 'POST', body: JSON.stringify(body) }),
+  },
 };
+

@@ -122,6 +122,18 @@ export const EventDetail: React.FC = () => {
     }
   };
 
+  const handleDeleteCategory = async (catId: string, catName: string) => {
+    if (!id) return;
+    if (!window.confirm(`Xác nhận xóa hạng mục "${catName}" khỏi sự kiện này?`)) return;
+    try {
+      await api.events.deleteCategory(id, catId);
+      alert('Xóa hạng mục thành công.');
+      fetchDetails();
+    } catch (err: any) {
+      alert(err.message || 'Lỗi khi xóa hạng mục.');
+    }
+  };
+
   const handleAddRound = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id || !roundName || !roundDeadline) return;
@@ -300,9 +312,33 @@ export const EventDetail: React.FC = () => {
         </div>
         <div className="p-8 relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
           <div>
-            <span className="inline-block rounded bg-indigo-50 border border-indigo-200 px-3 py-1 text-[9px] font-mono font-bold text-indigo-600 uppercase tracking-widest mb-4">
-              {event.status}
-            </span>
+            {user?.role === 'organizer' ? (
+              <select
+                value={event.status}
+                onChange={async (e) => {
+                  const newStatus = e.target.value;
+                  if (!window.confirm(`Xác nhận đổi trạng thái sự kiện thành "${newStatus.toUpperCase()}"?`)) return;
+                  try {
+                    await api.events.updateStatus(id!, { status: newStatus });
+                    alert('Cập nhật trạng thái sự kiện thành công.');
+                    fetchDetails();
+                  } catch (err: any) {
+                    alert(err.message || 'Lỗi khi cập nhật trạng thái.');
+                  }
+                }}
+                className="inline-block rounded bg-indigo-50 border border-indigo-200 px-2 py-1 text-[10px] font-mono font-bold text-indigo-600 uppercase tracking-widest mb-4 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              >
+                <option value="draft">DRAFT</option>
+                <option value="open_registration">OPEN REGISTRATION</option>
+                <option value="ongoing">ONGOING</option>
+                <option value="completed">COMPLETED</option>
+                <option value="cancelled">CANCELLED</option>
+              </select>
+            ) : (
+              <span className="inline-block rounded bg-indigo-50 border border-indigo-200 px-3 py-1 text-[9px] font-mono font-bold text-indigo-600 uppercase tracking-widest mb-4">
+                {event.status}
+              </span>
+            )}
             <h1 className="text-xl md:text-2xl font-extrabold text-slate-900 tracking-tight font-mono mb-4 uppercase">{event.title}</h1>
             <p className="text-xs text-slate-600 leading-relaxed max-w-[85ch]">{event.description}</p>
           </div>
@@ -392,8 +428,19 @@ export const EventDetail: React.FC = () => {
 
             <div className="space-y-4">
               {event.categories?.map((c: any) => (
-                <div key={c.id} className="p-4 rounded-lg bg-slate-50/50 border border-dark-border/60">
-                  <h4 className="text-xs font-bold text-slate-900 font-mono mb-1">{c.name}</h4>
+                <div key={c.id} className="p-4 rounded-lg bg-slate-50/50 border border-dark-border/60 relative group">
+                  <div className="flex justify-between items-start mb-1">
+                    <h4 className="text-xs font-bold text-slate-900 font-mono">{c.name}</h4>
+                    {user?.role === 'organizer' && (
+                      <button
+                        onClick={() => handleDeleteCategory(c.id, c.name)}
+                        className="text-[10px] text-rose-500 hover:text-rose-700 font-mono font-bold hover:underline opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Xóa hạng mục"
+                      >
+                        Xóa
+                      </button>
+                    )}
+                  </div>
                   <p className="text-[11px] text-slate-600">{c.description || 'Chưa có mô tả chi tiết.'}</p>
                 </div>
               ))}

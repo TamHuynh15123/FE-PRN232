@@ -65,8 +65,8 @@ export const OrganizerAdmin: React.FC = () => {
   const fetchTemplates = async () => {
     setLoadingTemplates(true);
     try {
-      const saved = localStorage.getItem('hack_templates') || '[]';
-      setTemplates(JSON.parse(saved));
+      const res = await api.criteriaTemplates.getAll();
+      setTemplates(res || []);
     } catch { } finally { setLoadingTemplates(false); }
   };
 
@@ -131,6 +131,22 @@ export const OrganizerAdmin: React.FC = () => {
       setJudgeEmail(''); setJudgeName(''); setJudgePassword('');
     } catch (err: any) { setJudgeError(err.message || 'Lỗi khi tạo tài khoản giám khảo.'); }
     finally { setJudgeLoading(false); }
+  };
+
+  const handleSuspendUser = async (userId: string, fullName: string) => {
+    const reason = window.prompt(`Nhập lý do khóa tài khoản của ${fullName}:`);
+    if (reason === null) return;
+    if (!reason.trim()) {
+      alert('Lý do không được để trống.');
+      return;
+    }
+    try {
+      await api.auth.suspendUser(userId, reason.trim());
+      alert('Đã khóa tài khoản thành công.');
+      fetchUsers();
+    } catch (err: any) {
+      alert(err.message || 'Lỗi khi khóa tài khoản.');
+    }
   };
 
   const handleGrantAward = async (teamId: string, teamName: string, awardName: string) => {
@@ -330,12 +346,12 @@ export const OrganizerAdmin: React.FC = () => {
                     <tr className="bg-slate-900 text-slate-300 font-mono font-semibold uppercase tracking-wider text-[10px]">
                       <th className="p-4">Họ và tên</th><th className="p-4">Email</th>
                       <th className="p-4">Vai trò</th><th className="p-4">Trạng thái</th>
-                      <th className="p-4">Ngày tạo</th>
+                      <th className="p-4">Ngày tạo</th><th className="p-4 text-right">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {allUsers.length === 0 ? (
-                      <tr><td colSpan={5} className="p-8 text-center text-slate-400">Không có dữ liệu.</td></tr>
+                      <tr><td colSpan={6} className="p-8 text-center text-slate-400">Không có dữ liệu.</td></tr>
                     ) : allUsers.map(u => (
                       <tr key={u.id} className="hover:bg-slate-50">
                         <td className="p-4 font-semibold text-slate-800">{u.fullName}</td>
@@ -355,6 +371,16 @@ export const OrganizerAdmin: React.FC = () => {
                         </td>
                         <td className="p-4 text-slate-500 font-mono">
                           {u.createdAt ? new Date(u.createdAt).toLocaleDateString('vi-VN') : '—'}
+                        </td>
+                        <td className="p-4 text-right">
+                          {u.role !== 'organizer' && u.status !== 'suspended' && (
+                            <button
+                              onClick={() => handleSuspendUser(u.id, u.fullName)}
+                              className="rounded bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2.5 py-1 text-[10px] font-bold text-rose-600 transition-all active:scale-95"
+                            >
+                              Khóa
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -546,26 +572,53 @@ export const OrganizerAdmin: React.FC = () => {
                 <h3 className="text-xs font-semibold text-slate-700 font-mono uppercase mb-1">Chưa có mẫu tiêu chí nào</h3>
                 <p className="text-[11px] text-slate-500 mb-6">Mẫu tiêu chí định nghĩa các hạng mục chấm điểm.</p>
                 <button
-                  onClick={() => {
-                    const t = [{
-                      id: crypto.randomUUID(), name: 'Mẫu Đánh Giá Lập Trình Cơ Bản', description: 'Mẫu mặc định gồm kỹ năng code, database và demo.',
-                      items: [{ name: 'Source Code & Clean Code', maxScore: 10, weight: 0.4 }, { name: 'Database Structure', maxScore: 10, weight: 0.3 }, { name: 'Demo & Presenting', maxScore: 10, weight: 0.3 }]
-                    }];
-                    setTemplates(t); localStorage.setItem('hack_templates', JSON.stringify(t));
+                  onClick={async () => {
+                    try {
+                      const newTemp = {
+                        name: 'Mẫu Đánh Giá Lập Trình Cơ Bản',
+                        description: 'Mẫu mặc định gồm kỹ năng code, database và demo.',
+                        isDefault: true,
+                        items: [
+                          { name: 'Source Code & Clean Code', maxScore: 10, weight: 0.4, displayOrder: 1 },
+                          { name: 'Database Structure', maxScore: 10, weight: 0.3, displayOrder: 2 },
+                          { name: 'Demo & Presenting', maxScore: 10, weight: 0.3, displayOrder: 3 }
+                        ]
+                      };
+                      await api.criteriaTemplates.create(newTemp);
+                      fetchTemplates();
+                    } catch (err: any) {
+                      alert(err.message || 'Lỗi khi khởi tạo mẫu mặc định.');
+                    }
                   }}
-                  className="rounded-lg bg-indigo-600 px-5 py-2 text-xs font-bold text-white hover:bg-indigo-700 active:scale-95 transition-all">
+                  className="rounded-lg bg-indigo-600 px-5 py-2 text-xs font-bold text-white hover:bg-indigo-700 active:scale-95 transition-all font-mono">
                   KHỞI TẠO MẪU MẶC ĐỊNH
                 </button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
                 {templates.map(t => (
-                  <div key={t.id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <h3 className="text-xs font-bold text-slate-900 font-mono mb-2 uppercase">{t.name}</h3>
+                  <div key={t.id} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm relative group">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="text-xs font-bold text-slate-900 font-mono uppercase">{t.name}</h3>
+                      <button
+                        onClick={async () => {
+                          if (!window.confirm(`Xác nhận xóa mẫu tiêu chí "${t.name}"?`)) return;
+                          try {
+                            await api.criteriaTemplates.delete(t.id);
+                            fetchTemplates();
+                          } catch (err: any) {
+                            alert(err.message || 'Lỗi khi xóa mẫu tiêu chí.');
+                          }
+                        }}
+                        className="text-[10px] text-rose-500 hover:text-rose-700 font-mono font-bold hover:underline"
+                      >
+                        Xóa mẫu
+                      </button>
+                    </div>
                     <p className="text-[11px] text-slate-600 mb-4">{t.description}</p>
                     <div className="space-y-2 border-t border-slate-100 pt-4">
                       {t.items?.map((item: any, idx: number) => (
-                        <div key={idx} className="flex justify-between items-center text-[10px] font-mono">
+                        <div key={item.id || idx} className="flex justify-between items-center text-[10px] font-mono">
                           <span className="text-slate-700">{item.name}</span>
                           <span className="text-indigo-600 font-semibold">Max: {item.maxScore} · {item.weight * 100}%</span>
                         </div>

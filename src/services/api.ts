@@ -37,6 +37,20 @@ const request = async <T>(path: string, options: RequestInit = {}): Promise<T> =
   return await res.json();
 };
 
+const downloadFile = async (path: string, options: RequestInit = {}): Promise<Blob> => {
+  const token = localStorage.getItem('access_token');
+  const headers = {
+    ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    ...options.headers,
+  };
+
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
+  if (!res.ok) {
+    throw new Error(`Download Error ${res.status}`);
+  }
+  return await res.blob();
+};
+
 export const api = {
   auth: {
     login: (body: any) => request<AuthResponse>('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
@@ -115,5 +129,19 @@ export const api = {
       request<any[]>(`/JudgeAssignments/rounds/${roundId}`),
     getByJudge: (judgeId: string) =>
       request<any[]>(`/JudgeAssignments/judges/${judgeId}`),
+  },
+  exports: {
+    downloadExcel: async (eventId: string) => {
+      const blob = await downloadFile(`/exports/events/${eventId}/ranking/excel`);
+      // Tạo link tải file
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `BangXepHang_${eventId.substring(0,6)}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    },
   },
 };

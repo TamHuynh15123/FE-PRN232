@@ -3,8 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  Trophy, Medal, ArrowLeft, ChartBar, Crown, Lightning, ArrowUp,
-  Star, Clock, Spinner, TrendUp
+  Trophy, Medal, ArrowLeft, ChartBar, Crown, ArrowUp,
+  Star, Clock, Spinner, TrendUp, DownloadSimple
 } from '@phosphor-icons/react';
 
 
@@ -100,7 +100,6 @@ const ResultTable: React.FC<{
       <div className="divide-y divide-slate-100">
         {results.map((r, idx) => {
           const isTop3 = idx < 3;
-          const c = scoreColor(r.totalScore);
           const PodiumIcon = idx < 3 ? PODIUM[idx].icon : null;
 
           return (
@@ -161,8 +160,22 @@ export const Ranking: React.FC = () => {
   const [eventRanking, setEventRanking] = useState<any | null>(null);
   const [roundRankings, setRoundRankings] = useState<Record<string, any>>({});
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
 
   const isOrganizer = user?.role === 'organizer';
+
+  const handleExport = async () => {
+    if (!eventId) return;
+    setExporting(true);
+    try {
+      await api.exports.downloadExcel(eventId);
+    } catch (err) {
+      console.error('Export failed:', err);
+      alert('Có lỗi xảy ra khi xuất file Excel.');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   useEffect(() => {
     if (!eventId) return;
@@ -232,13 +245,26 @@ export const Ranking: React.FC = () => {
             <h1 className="text-xl font-black text-slate-900">{currentEvent.title}</h1>
           </div>
         </div>
-        <span className={`self-start md:self-center rounded-full px-3 py-1 text-[10px] font-bold uppercase font-mono border ${
-          currentEvent.status === 'active' || currentEvent.status === 'ongoing'
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-            : 'bg-slate-100 border-slate-200 text-slate-500'
-        }`}>
-          {currentEvent.status?.toUpperCase()}
-        </span>
+        
+        <div className="flex items-center gap-3 self-start md:self-center">
+
+
+          {isOrganizer && (
+            <button
+              onClick={handleExport}
+              disabled={exporting || displayResults.length === 0}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-bold font-mono text-white transition-all hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+              title="Xuất bảng điểm Excel"
+            >
+              {exporting ? (
+                <Spinner size={14} className="animate-spin" />
+              ) : (
+                <DownloadSimple size={14} weight="bold" />
+              )}
+              Export Excel
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Stats row */}

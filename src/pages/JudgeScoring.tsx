@@ -3,7 +3,7 @@ import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
   Star, CheckCircle, Warning, ArrowRight, LinkSimple, GithubLogo, Trophy,
-  PencilSimple, ChatCircleText, Clock, ArrowLeft, SealCheck, CaretRight, X
+  PencilSimple, ChatCircleText, Clock, ArrowLeft, SealCheck, CaretRight
 } from '@phosphor-icons/react';
 
 const loadJudgeData = async (judgeId: string) => {

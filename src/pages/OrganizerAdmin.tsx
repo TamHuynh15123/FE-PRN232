@@ -4,11 +4,11 @@ import { useAuth } from '../context/AuthContext';
 import {
   UserCheck, UserPlus, FileText, Check, X, Shield,
   Warning, Users, Trophy, ClockCountdown, MagnifyingGlass,
-  Funnel, CheckCircle, XCircle
+  Funnel, CheckCircle
 } from '@phosphor-icons/react';
 
 export const OrganizerAdmin: React.FC = () => {
-  const { user } = useAuth();
+  const { } = useAuth();
   const [activeTab, setActiveTab] = useState<'approvals' | 'judge' | 'templates' | 'users' | 'awards' | 'auditlogs'>('approvals');
 
   // Tab 1: Approvals

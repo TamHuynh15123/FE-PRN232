@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
-import { Users, Clipboard, Plus, CheckCircle, Warning, GithubLogo, YoutubeLogo, Globe, FileText, ArrowClockwise, Copy, Check } from '@phosphor-icons/react';
+import { Users, Plus, CheckCircle, Warning, GithubLogo, YoutubeLogo, Globe, FileText, ArrowClockwise, Copy, Check } from '@phosphor-icons/react';
 
 export const TeamDetail: React.FC = () => {
   const { user } = useAuth();

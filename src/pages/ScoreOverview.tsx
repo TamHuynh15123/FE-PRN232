@@ -3,8 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  ChartBar, Trophy, ArrowLeft, Lightning, Spinner, MagnifyingGlass,
-  CheckCircle, Clock, Warning, ArrowUp, DownloadSimple, CaretDown, CaretUp
+  ChartBar, Trophy, ArrowLeft, Spinner, MagnifyingGlass,
+  CheckCircle, Clock, Warning, ArrowUp, DownloadSimple, CaretDown, CaretUp, FileXls
 } from '@phosphor-icons/react';
 
 
@@ -91,21 +91,22 @@ export const ScoreOverview: React.FC = () => {
     loadData();
   }, [selectedEvent]);
 
-  const handleDownloadCsv = async () => {
+
+  const handleDownloadExcel = async () => {
     if (!selectedEvent) return;
     try {
-      const res = await fetch(`/api/exports/events/${selectedEvent}/ranking/csv`, {
+      const res = await fetch(`/api/exports/events/${selectedEvent}/ranking/excel`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem('access_token')}` }
       });
-      if (!res.ok) throw new Error('Không thể tải CSV.');
+      if (!res.ok) throw new Error('Không thể tải Excel.');
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `ranking_${selectedEvent}.csv`;
+      a.download = `ranking_${selectedEvent}.xlsx`;
       a.click();
     } catch (err: any) {
-      alert(err.message || 'Lỗi xuất CSV.');
+      alert(err.message || 'Lỗi xuất Excel.');
     }
   };
 
@@ -170,12 +171,14 @@ export const ScoreOverview: React.FC = () => {
               {events.map(ev => <option key={ev.id} value={ev.id}>{ev.title}</option>)}
             </select>
           )}
-          <button
-            onClick={handleDownloadCsv}
-            className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-mono text-slate-600 hover:border-slate-300 hover:text-slate-900 transition-all"
-          >
-            <DownloadSimple size={14} /> CSV
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleDownloadExcel}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold font-mono text-emerald-700 hover:bg-emerald-100 transition-all shadow-sm"
+            >
+              <FileXls size={14} weight="bold" /> EXCEL
+            </button>
+          </div>
         </div>
       </div>
 

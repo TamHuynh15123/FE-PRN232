@@ -74,6 +74,7 @@ export const api = {
   teams: {
     create: (body: any) => request<any>('/teams', { method: 'POST', body: JSON.stringify(body) }),
     join: (body: any) => request<any>('/teams/join', { method: 'POST', body: JSON.stringify(body) }),
+    leave: (id: string) => request<any>(`/teams/${id}/leave`, { method: 'POST' }),
     getMyTeams: () => request<any[]>('/teams/my'),
     getStudentTeam: (eventId: string) => request<any>(`/teams/student/event/${eventId}`),
     getById: (id: string) => request<any>(`/teams/${id}`),
@@ -143,5 +144,8 @@ export const api = {
       a.remove();
       window.URL.revokeObjectURL(url);
     },
+  notifications: {
+    getMy: () => request<any[]>('/notifications/me'),
+    markAsRead: (id: string) => request<any>(`/notifications/${id}/read`, { method: 'POST' }),
   },
 };

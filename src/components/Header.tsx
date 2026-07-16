@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { SignOut, TerminalWindow, User, Shield, Users, Calendar, Star, ChartBar } from '@phosphor-icons/react';
+import { NotificationBell } from './NotificationBell';
 
 export const Header: React.FC = () => {
   const { user, logout } = useAuth();
@@ -60,7 +61,8 @@ export const Header: React.FC = () => {
         <div className="flex items-center gap-4">
           {user ? (
             <div className="flex items-center gap-3">
-              <div className="hidden sm:flex flex-col text-right">
+              <NotificationBell />
+              <div className="hidden sm:flex flex-col text-right border-l border-slate-200 pl-3 ml-1">
                 <span className="text-xs font-semibold text-slate-900">{user.fullName}</span>
                 <span className="text-[10px] font-mono text-indigo-500 uppercase tracking-wider">
                   {user.role.replace(/_/g, ' ')}

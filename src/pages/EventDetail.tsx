@@ -22,6 +22,8 @@ export const EventDetail: React.FC = () => {
   const [roundName, setRoundName] = useState('');
   const [roundDesc, setRoundDesc] = useState('');
   const [roundDeadline, setRoundDeadline] = useState('');
+  const [promotionRuleType, setPromotionRuleType] = useState('-1');
+  const [promotionRuleValue, setPromotionRuleValue] = useState('3');
 
   // Team creation/join states (Student)
   const [showTeamModal, setShowTeamModal] = useState(false);
@@ -124,18 +126,38 @@ export const EventDetail: React.FC = () => {
     e.preventDefault();
     if (!id || !roundName || !roundDeadline) return;
     try {
+      let promotionRules = [];
+      if (promotionRuleType !== '-1') {
+        let mappedRuleType = '';
+        if (promotionRuleType === '0') mappedRuleType = 'top_n_per_category';
+        else if (promotionRuleType === '1') mappedRuleType = 'top_n_overall';
+        else if (promotionRuleType === '2') mappedRuleType = 'score_threshold';
+
+        const valNum = parseFloat(promotionRuleValue) || 0;
+        promotionRules.push({
+          ruleType: mappedRuleType,
+          topN: (promotionRuleType === '0' || promotionRuleType === '1') ? valNum : undefined,
+          scoreThreshold: promotionRuleType === '2' ? valNum : undefined
+        });
+      }
+
       await api.events.createRound(id, {
         name: roundName,
         description: roundDesc,
-        submissionDeadline: new Date(roundDeadline).toISOString()
+        roundOrder: (event?.rounds?.length || 0) + 1,
+        submissionDeadline: new Date(roundDeadline).toISOString(),
+        promotionRules
       });
       setRoundName('');
       setRoundDesc('');
       setRoundDeadline('');
+      setPromotionRuleType('-1');
+      setPromotionRuleValue('3');
       setShowRoundForm(false);
       fetchDetails();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      alert(err.message || 'Lỗi khi thêm vòng thi đấu.');
     }
   };
 
@@ -420,6 +442,32 @@ export const EventDetail: React.FC = () => {
                     onChange={(e) => setRoundDeadline(e.target.value)}
                   />
                 </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 mb-1">Quy tắc đi tiếp (Thăng hạng)</label>
+                  <div className="flex gap-2">
+                    <select 
+                      className="w-full sm:w-1/2 rounded bg-white border border-dark-border py-1.5 px-3 text-xs text-slate-900 focus:outline-none focus:border-tech-cyan"
+                      value={promotionRuleType}
+                      onChange={(e) => setPromotionRuleType(e.target.value)}
+                    >
+                      <option value="-1">Mặc định (Tất cả đi tiếp)</option>
+                      <option value="0">Top N mỗi hạng mục</option>
+                      <option value="1">Top N toàn sự kiện</option>
+                      <option value="2">Theo Điểm chuẩn</option>
+                    </select>
+                    {promotionRuleType !== '-1' && (
+                      <input
+                        type="number"
+                        min="0"
+                        step={promotionRuleType === '2' ? '0.1' : '1'}
+                        className="w-full sm:w-1/2 rounded bg-white border border-dark-border py-1.5 px-3 text-xs text-slate-900 focus:outline-none focus:border-tech-cyan"
+                        placeholder={promotionRuleType === '2' ? "Nhập điểm chuẩn..." : "Nhập số lượng đội (N)..."}
+                        value={promotionRuleValue}
+                        onChange={(e) => setPromotionRuleValue(e.target.value)}
+                      />
+                    )}
+                  </div>
+                </div>
                 <div className="flex gap-2 justify-end">
                   <button type="button" onClick={() => setShowRoundForm(false)} className="text-[10px] text-slate-500 hover:text-slate-900 px-2 py-1">Hủy</button>
                   <button type="submit" className="rounded bg-tech-cyan text-[10px] text-white px-3 py-1 font-semibold">Thêm</button>
@@ -435,9 +483,21 @@ export const EventDetail: React.FC = () => {
                   </div>
                   <h4 className="text-xs font-bold text-slate-900 font-mono mb-1">Vòng {idx + 1}: {r.name}</h4>
                   <p className="text-[11px] text-slate-600 mb-2">{r.description}</p>
-                  <div className="text-[10px] font-mono text-slate-500 flex items-center gap-1.5">
+                  <div className="text-[10px] font-mono text-slate-500 flex items-center gap-1.5 mb-2">
                     <Calendar size={12} /> Hạn: {new Date(r.submissionDeadline).toLocaleDateString('vi-VN')}
                   </div>
+                  {r.promotionRules && r.promotionRules.length > 0 && (
+                    <div className="text-[10px] text-indigo-600 bg-indigo-50 border border-indigo-100 rounded px-2 py-1 inline-block font-mono">
+                      Luật đi tiếp: {r.promotionRules.map((pr: any, i: number) => {
+                        let text = "";
+                        const rt = pr.ruleType?.toLowerCase() || '';
+                        if (rt === 'top_n_per_category' || rt === 'topnpercategory') text = `Top ${pr.topN ?? 3} mỗi bảng`;
+                        else if (rt === 'top_n_overall' || rt === 'topnoverall') text = `Top ${pr.topN ?? 10} toàn cuộc`;
+                        else if (rt === 'score_threshold' || rt === 'scorethreshold') text = `Đạt >= ${pr.scoreThreshold ?? 0} điểm`;
+                        return <span key={i}>{text}{i < r.promotionRules.length - 1 ? ' | ' : ''}</span>;
+                      })}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

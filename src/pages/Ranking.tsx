@@ -174,7 +174,6 @@ export const Ranking: React.FC = () => {
         setEventRanking(evRanking?.results?.length > 0 ? evRanking : null);
         const rr: Record<string, any> = {};
         for (const round of ev?.rounds || []) {
-          await api.ranking.calculate(round.id).catch(() => {});
           const rk = await api.ranking.getRound(round.id);
           rr[round.id] = rk?.results?.length > 0 ? rk : { results: [] };
         }
@@ -188,7 +187,20 @@ export const Ranking: React.FC = () => {
     load();
   }, [eventId]);
 
-
+  const handleCalculateRanking = async (roundId: string) => {
+    if (!window.confirm("Bạn có chắc chắn muốn chốt điểm và gửi thông báo cho tất cả đội không?")) return;
+    setLoading(true);
+    try {
+      await api.ranking.calculate(roundId);
+      const rk = await api.ranking.getRound(roundId);
+      setRoundRankings(prev => ({ ...prev, [roundId]: rk?.results?.length > 0 ? rk : { results: [] } }));
+      alert('Đã tính toán xếp hạng và gửi thông báo thành công!');
+    } catch (err: any) {
+      alert('Lỗi tính toán xếp hạng: ' + (err.message || 'Unknown error'));
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -301,6 +313,14 @@ export const Ranking: React.FC = () => {
               </p>
             )}
           </div>
+          {isOrganizer && activeTab !== 'event' && (
+            <button
+              onClick={() => handleCalculateRanking(activeTab as string)}
+              className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 shadow-sm transition-all active:scale-95 whitespace-nowrap"
+            >
+              Chốt điểm & Báo kết quả
+            </button>
+          )}
           <div className="flex items-center gap-3">
             {calcAt && (
               <span className="inline-flex items-center gap-1.5 text-[10px] text-slate-400 font-mono">

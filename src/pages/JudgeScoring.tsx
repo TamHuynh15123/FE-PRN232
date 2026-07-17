@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { api } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import {
-  Star, CheckCircle, Warning, ArrowRight, LinkSimple, GithubLogo, Trophy,
+  Star, CheckCircle, Warning, ArrowRight, LinkSimple, GithubLogo, Trophy, YoutubeLogo,
   PencilSimple, ChatCircleText, Clock, ArrowLeft, SealCheck, CaretRight
 } from '@phosphor-icons/react';
 
@@ -253,7 +253,18 @@ export const JudgeScoring: React.FC = () => {
                         <LinkSimple size={12} /> Demo
                       </a>
                     )}
+                    {selected.videoUrl && (
+                      <a href={selected.videoUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500/80 border border-rose-400/50 px-3 py-1.5 text-[11px] font-mono text-white hover:bg-rose-500 transition-all">
+                        <YoutubeLogo size={12} weight="fill" /> Video
+                      </a>
+                    )}
                   </div>
+                  {selected.description && (
+                    <div className="mt-3 p-2 bg-white/10 rounded border border-white/10">
+                      <p className="text-[11px] text-white/90 whitespace-pre-wrap"><span className="font-bold opacity-70 uppercase tracking-widest text-[9px] block mb-0.5">Ghi chú:</span> {selected.description}</p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Progress bar */}
